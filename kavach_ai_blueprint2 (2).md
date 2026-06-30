@@ -2945,3 +2945,1098 @@ After the hackathon (if you continue this project):
 **Built with:** Python · FastAPI · React · PyTorch · HuggingFace Transformers · MuRIL · Whisper · EfficientNet-B4 · PaddleOCR · LIME · IndicTrans2
 
 **For Rural India. In Gujarati. Against Fraud.**
+
+
+# Other feature
+# Kavach AI — Focused Roadmap
+
+**Project Name:** Kavach AI  
+**Problem Statement:** Financial Safety for Rural India  
+**Goal:** Help first-time digital banking users detect scam calls, fake UPI requests, phishing messages, malicious APK files, and fraud attempts in simple Gujarati/Hindi.  
+**Roadmap Version:** Focused MVP + 3 Winning Features  
+
+---
+
+## 1. Project Overview
+
+Kavach AI is a financial safety shield for rural and semi-urban India. The user can scan suspicious SMS/WhatsApp messages, UPI screenshots, audio calls, APK files, or scam links. The system gives a clear result in Gujarati/Hindi:
+
+- Is it safe or fraud?
+- What is the scam type?
+- Why is it suspicious?
+- What should the user do next?
+- How risky is it on a 0–100 score?
+
+The project is designed for real users who may not understand technical cyber-security terms. The output must be simple, visual, and action-based.
+
+---
+
+## 2. Final Selected 3 Features
+
+These are the 3 best features to add in the roadmap:
+
+1. **Unified Scam Risk Score Engine**
+2. **Fraud Evidence Report + One-Tap Emergency Action**
+3. **Offline Lite Mode**
+
+These features make the project stronger because they cover:
+
+| Need | Feature |
+|---|---|
+| Easy decision-making | Unified Scam Risk Score |
+| Real-world response | Evidence Report + Emergency Action |
+| Rural usability | Offline Lite Mode |
+
+---
+
+# Feature 1: Unified Scam Risk Score Engine
+
+## 1.1 What It Does
+
+The Unified Scam Risk Score Engine combines all detection results into one final score from **0 to 100**.
+
+Instead of showing many separate model outputs, Kavach AI gives one simple result:
+
+```text
+Risk Score: 87/100
+Verdict: Critical Fraud
+Reason: OTP phishing + fake UPI collect request + urgent language
+Action: Do not share OTP/PIN. Call 1930 and report.
+```
+
+This makes the result easy for rural users, judges, and mentors to understand.
+
+---
+
+## 1.2 Score Levels
+
+| Score Range | Risk Level | Meaning | User Action |
+|---|---|---|---|
+| 0–30 | Safe | No strong fraud signal found | Stay careful |
+| 31–60 | Suspicious | Some warning signs found | Verify before action |
+| 61–80 | High Risk | Strong scam pattern detected | Do not click/pay/share |
+| 81–100 | Critical Fraud | Very dangerous fraud attempt | Block, report, alert family |
+
+---
+
+## 1.3 Signals Used
+
+The risk score will use signals from different scam detection engines:
+
+| Signal | Example | Weight |
+|---|---|---|
+| Text scam probability | OTP, KYC, lottery, loan scam text | 30% |
+| UPI fraud signal | Collect request disguised as payment | 25% |
+| URL/phishing risk | bit.ly, fake domain, suspicious link | 15% |
+| APK malware risk | Dangerous permissions like READ_SMS | 15% |
+| Audio/deepfake risk | AI voice or suspicious call transcript | 10% |
+| Urgency/pressure words | "urgent", "account block", "last chance" | 5% |
+
+---
+
+## 1.4 Risk Score Formula
+
+```text
+Final Risk Score =
+(Text Scam Score × 0.30)
++ (UPI Scam Score × 0.25)
++ (URL Risk Score × 0.15)
++ (APK Risk Score × 0.15)
++ (Audio/Deepfake Score × 0.10)
++ (Urgency Score × 0.05)
+```
+
+The final score will be capped at 100.
+
+---
+
+## 1.5 Technology Used
+
+| Layer | Technology |
+|---|---|
+| Backend | FastAPI |
+| Risk logic | Python weighted scoring engine |
+| Text scam score | MuRIL / IndicBERT classifier |
+| UPI screenshot score | PaddleOCR + rule engine |
+| URL score | PhishTank / Google Safe Browsing API / custom URL rules |
+| APK score | androguard + permission risk scorer + VirusTotal API |
+| Audio score | Whisper / faster-whisper + scam classifier |
+| Explanation | LIME |
+| Frontend display | React + Tailwind CSS |
+| Charts/progress UI | Recharts / custom progress bar |
+
+---
+
+## 1.6 Backend File Structure
+
+```text
+backend/
+├── services/
+│   ├── risk_score_service.py
+│   ├── muril_service.py
+│   ├── ocr_service.py
+│   ├── apk_scanner.py
+│   ├── url_checker.py
+│   └── gujarati_alert_service.py
+│
+├── schemas/
+│   ├── risk_score_schema.py
+│   └── response_schemas.py
+│
+└── api/
+    └── routes/
+        ├── scan_text.py
+        ├── scan_upi.py
+        ├── scan_apk.py
+        └── scan_audio.py
+```
+
+---
+
+## 1.7 Example Backend Response
+
+```json
+{
+  "verdict": "CRITICAL_FRAUD",
+  "risk_score": 87,
+  "risk_level": "Critical Fraud",
+  "scam_category": "OTP_PHISHING",
+  "reasons": [
+    "OTP sharing request detected",
+    "Urgency pressure detected",
+    "Suspicious shortened URL detected"
+  ],
+  "gujarati_alert": "⚠️ આ ફ્રોડ છે! OTP/PIN ક્યારેય share ન કરો.",
+  "actions": [
+    "Do not share OTP/PIN",
+    "Do not click the link",
+    "Block sender",
+    "Call 1930",
+    "Report on cybercrime.gov.in"
+  ]
+}
+```
+
+---
+
+## 1.8 Frontend UI
+
+The frontend should show:
+
+- Big risk score meter
+- Risk level badge
+- Gujarati warning
+- Red flag list
+- Recommended actions
+- Emergency buttons
+
+Example UI layout:
+
+```text
+------------------------------------------------
+⚠️ Critical Fraud Detected
+
+Risk Score: 87/100
+
+Reasons:
+• OTP request detected
+• Fake KYC update link
+• Urgent pressure language
+
+What to do:
+[Call 1930] [Report Online] [Download Evidence]
+------------------------------------------------
+```
+
+---
+
+# Feature 2: Fraud Evidence Report + One-Tap Emergency Action
+
+## 2.1 What It Does
+
+After Kavach AI detects a scam, it should not stop at warning the user. It should help the user take action immediately.
+
+This feature will:
+
+1. Generate a fraud evidence report.
+2. Let the user call 1930.
+3. Open cybercrime.gov.in.
+4. Share warning with family.
+5. Save proof for bank or police complaint.
+
+---
+
+## 2.2 Why This Feature Is Important
+
+Many victims do not know how to report cyber fraud. They panic and lose time. Kavach AI will guide them step by step.
+
+This feature is very useful for hackathon demos because judges can clearly see the real-world impact.
+
+---
+
+## 2.3 Evidence Report Includes
+
+The PDF/report will contain:
+
+| Field | Details |
+|---|---|
+| Report ID | Unique report number |
+| Date and time | When scan happened |
+| Input type | SMS, UPI screenshot, APK, audio, image |
+| Scam category | OTP, KYC, lottery, loan, APK malware, UPI collect |
+| Risk score | 0–100 |
+| Risk level | Safe / Suspicious / High Risk / Critical Fraud |
+| Detected red flags | Suspicious words, URLs, permissions, OCR text |
+| AI confidence | Model confidence percentage |
+| Gujarati warning | Simple user-facing warning |
+| Recommended action | What user should do |
+| Report links | 1930 and cybercrime.gov.in |
+
+---
+
+## 2.4 Emergency Actions
+
+| Button | Function |
+|---|---|
+| Call 1930 | Opens phone dialer with cyber fraud helpline |
+| Report Online | Opens cybercrime.gov.in |
+| Download Evidence PDF | Downloads fraud report |
+| Share to Family | Sends warning through WhatsApp/share menu |
+| Block Sender | Gives blocking instruction or triggers native option where available |
+| Delete APK/File | Shows delete warning for malicious APKs |
+
+---
+
+## 2.5 Technology Used
+
+| Layer | Technology |
+|---|---|
+| Backend API | FastAPI |
+| PDF generation | ReportLab / WeasyPrint / PDFKit |
+| Report ID | UUID |
+| Temporary file storage | Local `/tmp`, S3, Supabase Storage, or Firebase Storage |
+| Database | PostgreSQL / MongoDB |
+| Frontend | React + Tailwind CSS |
+| Share option | Web Share API |
+| Call option | `tel:1930` link |
+| Online report | `https://cybercrime.gov.in` button |
+| Security | Auto-delete report files, hashed user identifiers |
+
+---
+
+## 2.6 Backend File Structure
+
+```text
+backend/
+├── services/
+│   ├── evidence_report_service.py
+│   ├── emergency_action_service.py
+│   ├── risk_score_service.py
+│   └── gujarati_alert_service.py
+│
+├── templates/
+│   └── evidence_report_template.html
+│
+├── generated_reports/
+│   └── .gitkeep
+│
+└── api/
+    └── routes/
+        ├── generate_report.py
+        └── scan_text.py
+```
+
+---
+
+## 2.7 API Endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/generate-report` | Generate evidence PDF |
+| GET | `/api/report/{report_id}` | Download report |
+| POST | `/api/share-warning` | Prepare family warning message |
+| POST | `/api/scan-text` | Scan SMS/WhatsApp message |
+| POST | `/api/scan-upi` | Scan UPI screenshot |
+| POST | `/api/scan-apk` | Scan suspicious APK |
+
+---
+
+## 2.8 Example Evidence Report Format
+
+```text
+KAVACH AI FRAUD EVIDENCE REPORT
+
+Report ID: KAVACH-2026-00091
+Date: 30 June 2026
+Input Type: SMS / WhatsApp Message
+Risk Score: 91/100
+Risk Level: Critical Fraud
+Scam Category: KYC Scam + OTP Phishing
+
+Detected Red Flags:
+1. "KYC update now"
+2. "Account will be blocked"
+3. "Share OTP"
+4. Suspicious shortened URL
+
+Gujarati Warning:
+⚠️ આ ફ્રોડ છે! Bank ક્યારેય OTP/PIN માંગતી નથી.
+
+Recommended Action:
+- Do not share OTP/PIN.
+- Do not click the link.
+- Call 1930 immediately if money is lost.
+- Report on cybercrime.gov.in.
+```
+
+---
+
+## 2.9 Family Alert Message
+
+```text
+⚠️ Kavach AI Alert
+
+A suspicious fraud attempt was detected on my phone.
+
+Risk Score: 91/100
+Scam Type: KYC/OTP Scam
+
+Please help me verify before I take any action.
+I should not share OTP, PIN, password, or bank details.
+```
+
+Gujarati version:
+
+```text
+⚠️ Kavach AI Alert
+
+Mara phone par fraud attempt detect thayu chhe.
+
+Risk Score: 91/100
+Scam Type: KYC/OTP Scam
+
+Krupa kari verify karvama madad karo.
+Hu OTP, PIN, password ke bank details share nahi karu.
+```
+
+---
+
+# Feature 3: Offline Lite Mode
+
+## 3.1 What It Does
+
+Offline Lite Mode allows Kavach AI to work even when internet is weak or unavailable.
+
+This is very important for rural India because many users may not have stable internet. The app should still detect common scams using local rules and preloaded Gujarati/Hindi scam phrases.
+
+---
+
+## 3.2 Offline Features
+
+| Feature | Description |
+|---|---|
+| Offline text scan | Detects OTP, KYC, lottery, loan, fake job messages |
+| Offline UPI warning | Detects basic UPI collect/request keywords from pasted OCR/manual text |
+| Offline APK warning | Warns users not to install APKs from WhatsApp/SMS |
+| Gujarati warning | Shows local-language warning without backend |
+| Local scan history | Saves previous scan results on device |
+| Sync later | Uploads report when internet comes back |
+| Emergency info | Shows 1930 and cybercrime.gov.in even offline |
+
+---
+
+## 3.3 Offline Rule Examples
+
+### OTP Scam Rule
+
+```text
+If message contains:
+"OTP" OR "PIN" OR "password"
+AND
+"share" OR "send" OR "verify"
+
+Then:
+Risk Level = High Risk
+Warning = Bank kyarey OTP/PIN maangti nathi.
+```
+
+### KYC Scam Rule
+
+```text
+If message contains:
+"KYC" OR "account block" OR "verify now" OR "update link"
+
+Then:
+Risk Level = Suspicious or High Risk
+Warning = Official bank app/website thi j KYC update karo.
+```
+
+### Lottery Scam Rule
+
+```text
+If message contains:
+"winner" OR "lottery" OR "lucky draw" OR "PM-KISAN prize"
+
+Then:
+Risk Level = High Risk
+Warning = Free lottery prize WhatsApp par nathi aavti.
+```
+
+### UPI Collect Rule
+
+```text
+If message contains:
+"collect request" OR "request money" OR "enter UPI PIN to receive"
+
+Then:
+Risk Level = Critical Fraud
+Warning = Paisa receive karva UPI PIN jarur nathi.
+```
+
+---
+
+## 3.4 Technology Used
+
+| Layer | Technology |
+|---|---|
+| Frontend | React |
+| Offline app support | PWA Service Worker |
+| Local storage | IndexedDB |
+| Simple storage | LocalStorage |
+| Offline rule engine | JavaScript/TypeScript |
+| Offline phrase database | JSON file |
+| Sync queue | IndexedDB queue |
+| Network detection | Browser `navigator.onLine` API |
+| Optional mobile app | React Native / Capacitor |
+| Gujarati UI | Static phrase dictionary |
+
+---
+
+## 3.5 Frontend File Structure
+
+```text
+frontend/
+├── public/
+│   ├── manifest.json
+│   ├── service-worker.js
+│   └── offline-scam-rules.json
+│
+└── src/
+    ├── offline/
+    │   ├── offlineRuleEngine.js
+    │   ├── scamKeywords.gu.json
+    │   ├── scamKeywords.hi.json
+    │   ├── syncQueue.js
+    │   └── networkStatus.js
+    │
+    ├── components/
+    │   ├── OfflineBanner.jsx
+    │   ├── TextScanner.jsx
+    │   ├── ResultCard.jsx
+    │   └── EmergencyActions.jsx
+    │
+    └── App.jsx
+```
+
+---
+
+## 3.6 Offline JSON Keyword Database
+
+```json
+{
+  "otp_phishing": {
+    "keywords": ["otp", "pin", "password", "passcode", "share otp", "send otp"],
+    "risk": 85,
+    "gujarati_warning": "⚠️ OTP/PIN ક્યારેય share ન કરો. Bank ક્યારેય OTP માંગતી નથી."
+  },
+  "kyc_scam": {
+    "keywords": ["kyc", "account block", "verify now", "update kyc", "bank close"],
+    "risk": 75,
+    "gujarati_warning": "⚠️ KYC update માટે official bank app/website જ use કરો."
+  },
+  "lottery_scam": {
+    "keywords": ["lottery", "winner", "lucky draw", "prize", "pm-kisan"],
+    "risk": 80,
+    "gujarati_warning": "⚠️ Lottery/prize scam હોઈ શકે છે. Link પર click ન કરો."
+  },
+  "upi_collect_scam": {
+    "keywords": ["collect request", "request money", "upi pin to receive", "receive money enter pin"],
+    "risk": 95,
+    "gujarati_warning": "⚠️ પૈસા receive કરવા UPI PIN નાખવાની જરૂર નથી."
+  },
+  "apk_malware": {
+    "keywords": [".apk", "install app", "download apk", "challan apk", "kyc apk"],
+    "risk": 90,
+    "gujarati_warning": "⚠️ WhatsApp/SMS થી આવેલી APK install ન કરો."
+  }
+}
+```
+
+---
+
+## 3.7 Offline Result Example
+
+```json
+{
+  "mode": "offline",
+  "verdict": "HIGH_RISK",
+  "risk_score": 85,
+  "scam_category": "OTP_PHISHING",
+  "gujarati_alert": "⚠️ OTP/PIN ક્યારેય share ન કરો. Bank ક્યારેય OTP માંગતી નથી.",
+  "actions": [
+    "Do not share OTP/PIN",
+    "Do not click any link",
+    "Call 1930 if money is lost",
+    "Report when internet is available"
+  ],
+  "sync_status": "pending"
+}
+```
+
+---
+
+# 4. Complete Technology Stack
+
+## 4.1 Frontend
+
+| Technology | Use |
+|---|---|
+| React | Main frontend |
+| Tailwind CSS | UI design |
+| Axios | Backend API calls |
+| React Dropzone | File upload |
+| PWA Service Worker | Offline support |
+| IndexedDB | Local scan history and sync queue |
+| Web Share API | Share warning to family |
+| Recharts | Risk score/dashboard visuals |
+
+---
+
+## 4.2 Backend
+
+| Technology | Use |
+|---|---|
+| Python 3.11 | Main backend language |
+| FastAPI | REST API |
+| Uvicorn | ASGI server |
+| Pydantic | Request/response validation |
+| python-multipart | File uploads |
+| ReportLab / WeasyPrint | Evidence report PDF |
+| PostgreSQL / MongoDB | Store reports and scan metadata |
+| Redis | Optional queue/cache for future |
+| Docker | Deployment |
+
+---
+
+## 4.3 AI / ML
+
+| Technology | Use |
+|---|---|
+| MuRIL / IndicBERT | Gujarati/Hindi/English scam text classification |
+| Whisper / faster-whisper | Audio transcription |
+| PaddleOCR | UPI screenshot OCR |
+| LIME | Explainable AI red flag phrases |
+| EfficientNet-B4 | Deepfake image detection |
+| CNN voice model | Deepfake voice detection |
+| androguard | APK permission scanner |
+| VirusTotal API | APK hash reputation lookup |
+| IndicTrans2 | Gujarati/Hindi translation |
+
+---
+
+## 4.4 APIs and Integrations
+
+| API / Integration | Use |
+|---|---|
+| cybercrime.gov.in | Online cyber fraud reporting |
+| `tel:1930` | Direct cyber fraud helpline call |
+| VirusTotal API | APK malware hash check |
+| PhishTank / Safe Browsing API | URL risk check |
+| Web Share API | Share fraud alert with family |
+
+---
+
+# 5. MVP Implementation Roadmap
+
+## Phase 1: Core UI and Basic Scan
+
+**Goal:** Create the main user interface.
+
+Tasks:
+
+- Create React app.
+- Build tabs: Text Scan, UPI Scan, APK Scan.
+- Create ResultCard component.
+- Add Gujarati warning UI.
+- Add emergency action buttons.
+
+Technologies:
+
+- React
+- Tailwind CSS
+- Axios
+- Web Share API
+
+---
+
+## Phase 2: Backend Setup
+
+**Goal:** Create the FastAPI backend.
+
+Tasks:
+
+- Setup FastAPI project.
+- Create health check route.
+- Add CORS.
+- Create scan APIs.
+- Add response schemas.
+
+Technologies:
+
+- Python 3.11
+- FastAPI
+- Uvicorn
+- Pydantic
+- python-multipart
+
+---
+
+## Phase 3: Risk Score Engine
+
+**Goal:** Build the Unified Scam Risk Score.
+
+Tasks:
+
+- Create `risk_score_service.py`.
+- Define scoring weights.
+- Accept results from text, UPI, URL, APK, and audio modules.
+- Return final risk score.
+- Show score in frontend.
+
+Technologies:
+
+- Python
+- FastAPI
+- React progress meter
+- Recharts optional
+
+---
+
+## Phase 4: Evidence Report + Emergency Action
+
+**Goal:** Help user take action after detection.
+
+Tasks:
+
+- Create PDF report template.
+- Generate report ID.
+- Add download report button.
+- Add Call 1930 button.
+- Add cybercrime.gov.in button.
+- Add Share to Family button.
+
+Technologies:
+
+- ReportLab / WeasyPrint
+- FastAPI
+- React
+- Web Share API
+- UUID
+
+---
+
+## Phase 5: Offline Lite Mode
+
+**Goal:** Make the app useful in low internet.
+
+Tasks:
+
+- Add PWA manifest.
+- Add service worker.
+- Create offline rules JSON.
+- Create offline rule engine.
+- Store scan result in IndexedDB.
+- Sync reports when online.
+
+Technologies:
+
+- PWA Service Worker
+- IndexedDB
+- JavaScript/TypeScript
+- LocalStorage
+- React
+
+---
+
+## Phase 6: AI Model Integration
+
+**Goal:** Improve detection accuracy.
+
+Tasks:
+
+- Integrate MuRIL/IndicBERT text classifier.
+- Add PaddleOCR for UPI screenshot.
+- Add APK scanner using androguard.
+- Add Whisper/faster-whisper for audio.
+- Add LIME explanations.
+
+Technologies:
+
+- PyTorch
+- HuggingFace Transformers
+- PaddleOCR
+- androguard
+- faster-whisper
+- LIME
+
+---
+
+# 6. Suggested Folder Structure
+
+```text
+kavach-ai/
+├── README.md
+├── roadmap.md
+├── docker-compose.yml
+├── .env.example
+│
+├── backend/
+│   ├── main.py
+│   ├── config.py
+│   │
+│   ├── api/
+│   │   └── routes/
+│   │       ├── scan_text.py
+│   │       ├── scan_upi.py
+│   │       ├── scan_apk.py
+│   │       ├── scan_audio.py
+│   │       └── generate_report.py
+│   │
+│   ├── services/
+│   │   ├── risk_score_service.py
+│   │   ├── evidence_report_service.py
+│   │   ├── emergency_action_service.py
+│   │   ├── offline_sync_service.py
+│   │   ├── muril_service.py
+│   │   ├── ocr_service.py
+│   │   ├── apk_scanner.py
+│   │   ├── url_checker.py
+│   │   ├── whisper_service.py
+│   │   ├── lime_service.py
+│   │   └── gujarati_alert_service.py
+│   │
+│   ├── schemas/
+│   │   ├── request_schemas.py
+│   │   ├── response_schemas.py
+│   │   └── risk_score_schema.py
+│   │
+│   ├── templates/
+│   │   └── evidence_report_template.html
+│   │
+│   └── generated_reports/
+│       └── .gitkeep
+│
+├── frontend/
+│   ├── package.json
+│   ├── public/
+│   │   ├── manifest.json
+│   │   ├── service-worker.js
+│   │   └── offline-scam-rules.json
+│   │
+│   └── src/
+│       ├── App.jsx
+│       ├── api/
+│       │   └── kavachApi.js
+│       │
+│       ├── offline/
+│       │   ├── offlineRuleEngine.js
+│       │   ├── scamKeywords.gu.json
+│       │   ├── scamKeywords.hi.json
+│       │   ├── syncQueue.js
+│       │   └── networkStatus.js
+│       │
+│       └── components/
+│           ├── TextScanner.jsx
+│           ├── UPIScanner.jsx
+│           ├── APKScanner.jsx
+│           ├── AudioScanner.jsx
+│           ├── ResultCard.jsx
+│           ├── RiskScoreMeter.jsx
+│           ├── EmergencyActions.jsx
+│           ├── OfflineBanner.jsx
+│           └── RedFlagList.jsx
+│
+└── data/
+    ├── raw/
+    ├── processed/
+    ├── synthetic/
+    └── models/
+```
+
+---
+
+# 7. Database Design
+
+## 7.1 Reports Table
+
+```sql
+CREATE TABLE fraud_reports (
+    id UUID PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT NOW(),
+    input_type VARCHAR(50),
+    scam_category VARCHAR(100),
+    risk_score INT,
+    risk_level VARCHAR(50),
+    verdict VARCHAR(50),
+    red_flags JSONB,
+    gujarati_alert TEXT,
+    report_file_url TEXT,
+    sync_status VARCHAR(50)
+);
+```
+
+## 7.2 Scan History Table
+
+```sql
+CREATE TABLE scan_history (
+    id UUID PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT NOW(),
+    mode VARCHAR(20), -- online/offline
+    input_type VARCHAR(50),
+    risk_score INT,
+    verdict VARCHAR(50),
+    scam_category VARCHAR(100),
+    red_flags JSONB
+);
+```
+
+## 7.3 Emergency Contacts Table
+
+```sql
+CREATE TABLE emergency_contacts (
+    id UUID PRIMARY KEY,
+    user_id UUID,
+    contact_name VARCHAR(100),
+    phone_number_hash TEXT,
+    relation VARCHAR(50),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+---
+
+# 8. API Design
+
+## 8.1 Scan Text
+
+```http
+POST /api/scan-text
+```
+
+Request:
+
+```json
+{
+  "text": "Your KYC will expire. Share OTP now.",
+  "language": "auto"
+}
+```
+
+Response:
+
+```json
+{
+  "verdict": "CRITICAL_FRAUD",
+  "risk_score": 91,
+  "risk_level": "Critical Fraud",
+  "scam_category": "KYC_SCAM",
+  "red_flags": ["KYC", "OTP", "urgent"],
+  "gujarati_alert": "⚠️ આ ફ્રોડ છે! OTP/PIN share ન કરો.",
+  "actions": ["Call 1930", "Report Online", "Block Sender"]
+}
+```
+
+---
+
+## 8.2 Generate Evidence Report
+
+```http
+POST /api/generate-report
+```
+
+Request:
+
+```json
+{
+  "scan_result_id": "uuid",
+  "include_input_text": true
+}
+```
+
+Response:
+
+```json
+{
+  "report_id": "KAVACH-2026-00091",
+  "download_url": "/api/report/KAVACH-2026-00091"
+}
+```
+
+---
+
+## 8.3 Offline Sync
+
+```http
+POST /api/sync-offline-scans
+```
+
+Request:
+
+```json
+{
+  "scans": [
+    {
+      "local_id": "offline-001",
+      "mode": "offline",
+      "risk_score": 85,
+      "scam_category": "OTP_PHISHING",
+      "created_at": "2026-06-30T10:30:00"
+    }
+  ]
+}
+```
+
+Response:
+
+```json
+{
+  "synced": 1,
+  "failed": 0
+}
+```
+
+---
+
+# 9. Demo Flow for Hackathon
+
+## Demo 1: WhatsApp KYC Scam
+
+Input:
+
+```text
+Dear customer, your SBI KYC will expire today. Update now using this link and share OTP to avoid account block.
+```
+
+Expected Output:
+
+```text
+Risk Score: 91/100
+Risk Level: Critical Fraud
+Scam Category: KYC + OTP Phishing
+
+Gujarati Warning:
+⚠️ આ ફ્રોડ છે! Bank ક્યારેય OTP/PIN માંગતી નથી.
+
+Actions:
+[Call 1930] [Report Online] [Download Evidence] [Share to Family]
+```
+
+---
+
+## Demo 2: Offline Mode
+
+Steps:
+
+1. Turn off internet.
+2. Open Kavach AI.
+3. Paste scam message.
+4. App shows "Offline Mode Active".
+5. App detects scam using local rules.
+6. Result is saved locally.
+7. Turn on internet.
+8. App syncs scan result.
+
+Expected Output:
+
+```text
+Offline Mode Active
+Risk Score: 85/100
+Scam Type: OTP Phishing
+Sync Status: Pending
+```
+
+---
+
+## Demo 3: Evidence Report
+
+Steps:
+
+1. Scan fraud message.
+2. Click "Download Evidence Report".
+3. Show generated PDF.
+4. Explain that user can send this to bank/police/cybercrime portal.
+
+---
+
+# 10. Build Priority
+
+## Must Build First
+
+| Priority | Feature | Reason |
+|---|---|---|
+| 1 | Text scam scanner | Easiest and most important demo |
+| 2 | Unified Risk Score | Makes output simple |
+| 3 | Gujarati ResultCard | Target user friendly |
+| 4 | Emergency Action buttons | Real-world impact |
+| 5 | Evidence PDF | Strong judge impression |
+| 6 | Offline Lite Mode | Rural India practicality |
+
+---
+
+## Build If Time
+
+| Feature | Reason |
+|---|---|
+| UPI screenshot OCR | Strong fintech use case |
+| APK scanner | Unique cyber-safety angle |
+| Audio scam detection | Good advanced feature |
+| LIME red flag explanation | Makes AI trustworthy |
+
+---
+
+## Future Features
+
+| Feature | Reason |
+|---|---|
+| Live call scam detector | Advanced real-time defense |
+| Deepfake voice detection | Future-ready fraud protection |
+| Admin dashboard | Fraud trend monitoring |
+| Community scam map | Public safety intelligence |
+| Family auto-alert | High-risk intervention |
+
+---
+
+# 11. Final Recommended Stack for MVP
+
+Use this stack for fastest hackathon build:
+
+| Area | Recommended Choice |
+|---|---|
+| Frontend | React + Tailwind CSS |
+| Backend | FastAPI |
+| Database | PostgreSQL or MongoDB |
+| Offline | PWA + IndexedDB |
+| PDF | ReportLab |
+| Text AI | MuRIL / IndicBERT |
+| OCR | PaddleOCR |
+| APK scanner | androguard |
+| Translation | Manual Gujarati templates first, IndicTrans2 later |
+| Deployment | Vercel frontend + Render backend |
+| Container | Docker optional |
+
+---
+
+# 12. Final Pitch Line
+
+**Kavach AI is not only a scam detector. It is a rural financial safety shield that detects fraud, explains the risk in Gujarati, works offline, generates evidence, and helps the user report the scam immediately.**
+
