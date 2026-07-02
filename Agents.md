@@ -146,7 +146,7 @@ flowchart TB
 | **P0** | Patient Orchestrator | Master | Patient | ❌ Logic only | ✅ Triggers webhooks |
 | **H0** | Hospital Orchestrator | Master | Hospital | ❌ Logic only | ✅ Triggers webhooks |
 | **P1** | Image Preprocessor | CV (Patient) | Patient | ❌ OpenCV logic | ❌ |
-| **P2** | CV Inference Engine | CV (Patient) | Patient | ✅ MobileNetV2 / EfficientNet-Lite (TFLite) | ❌ On-device |
+| **P2** | CV Inference Engine | CV (Patient) | Patient | ✅ YOLOv8/YOLOv11 (.pt) | ✅ via n8n HTTP Request (HF Spaces) |
 | **P3** | Result Interpreter | CV (Patient) | Patient | ❌ Rule-based + lookup | ✅ Triggers escalation |
 | **R1** | Language Processor | RAG (Shared) | Both | ✅ ASR (Wav2Vec2), MT (IndicTrans2), TTS | ❌ API calls |
 | **R2** | Query Understanding | RAG (Shared) | Both | ✅ DistilBERT (fine-tuned NER) | ❌ |
@@ -154,10 +154,10 @@ flowchart TB
 | **R4** | Grounded Generator | RAG (Shared) | Both | ✅ Gemma 4 31B via OpenRouter | ✅ n8n AI Agent node |
 | **R5** | Response Formatter | RAG (Shared) | Both | ❌ Template + translation | ❌ |
 | **H1** | MRI Preprocessor | Imaging (Hospital) | Hospital | ❌ DICOM parsing logic | ❌ |
-| **H2** | Brain Tumor Segmenter | Imaging (Hospital) | Hospital | ✅ U-Net + ResNet50 encoder | ✅ via HTTP Request |
-| **H3** | Brain Tumor Classifier | Imaging (Hospital) | Hospital | ✅ ResNet50 (transfer learning) | ✅ via HTTP Request |
-| **H4** | X-ray Analyzer | Imaging (Hospital) | Hospital | ✅ DenseNet-121 / CheXNet | ✅ via HTTP Request |
-| **H5** | Cancer Screening Engine | Imaging (Hospital) | Hospital | ✅ EfficientNet-B4 / ResNet50 | ✅ via HTTP Request |
+| **H2** | Brain Tumor Segmenter | Imaging (Hospital) | Hospital | ✅ YOLOv8-seg (segmentation) | ✅ via HTTP Request |
+| **H3** | Brain Tumor Classifier | Imaging (Hospital) | Hospital | ✅ YOLOv8-cls (classification) | ✅ via HTTP Request |
+| **H4** | X-ray Analyzer | Imaging (Hospital) | Hospital | ✅ YOLOv8-cls / YOLOv11 | ✅ via HTTP Request |
+| **H5** | Cancer Screening Engine | Imaging (Hospital) | Hospital | ✅ YOLOv8-cls (multi-organ) | ✅ via HTTP Request |
 | **H6** | Imaging Result Interpreter | Imaging (Hospital) | Hospital | ❌ Rule-based + RAG context | ✅ Triggers queue update |
 | **A1** | Appointment Manager | Action | Both | ❌ Workflow logic | ✅ Core n8n workflow |
 | **A2** | Hospital Locator | Action | Both | ❌ PostGIS queries | ❌ Supabase direct |
@@ -176,7 +176,7 @@ flowchart TB
 | Category | Count | Trained Models |
 |---|---|---|
 | Master Orchestrators | 2 | 0 |
-| Patient CV Agents | 3 | 1 (skin/eye/oral CNN) |
+| Patient CV Agents | 3 | 1 (skin/eye/oral YOLO) |
 | RAG Agents (Shared) | 5 | 3 (ASR, embedder, LLM) |
 | Hospital Imaging Agents | 6 | 4 (segmenter, classifier, X-ray, cancer) |
 | Action Agents | 6 | 1 (drug interaction RAG) |
@@ -188,7 +188,7 @@ flowchart TB
 
 ## 3. Agent Group 1 — Computer Vision Agents (Patient Side)
 
-These agents run on the **patient's device** (on-device inference via TFLite) for skin, eye, and oral disease screening.
+These agents handle skin, eye, and oral disease screening. YOLO models are trained on Kaggle, exported as `.pt` files, deployed to **Hugging Face Spaces** (Gradio API), and called by n8n via HTTP Request nodes — enabling full automation of the CV pipeline.
 
 ### Agent P1: Image Preprocessor
 
@@ -198,7 +198,7 @@ These agents run on the **patient's device** (on-device inference via TFLite) fo
 | **Trained model?** | ❌ No — uses OpenCV algorithms (blur detection via Laplacian variance, brightness via histogram analysis) |
 | **Runs where** | On-device (JavaScript/WASM in PWA) |
 | **Input** | Raw image file (JPEG/PNG from phone camera) |
-| **Output** | Preprocessed tensor (224×224×3, normalized) + quality report |
+| **Output** | Preprocessed image (640×640, normalized) + quality report |
 | **Key functions** | `validate_image()`, `assess_quality()` (blur, brightness, focus), `detect_roi()` (saliency-based crop), `preprocess()` (resize, normalize), `augment_for_robustness()` (test-time augmentation) |
 | **Failure behavior** | Returns specific re-capture instruction: "Image too blurry — hold phone steady" / "Too dark — find better lighting" |
 | **n8n connection** | ❌ None — fully on-device |
@@ -207,22 +207,22 @@ These agents run on the **patient's device** (on-device inference via TFLite) fo
 
 | Property | Detail |
 |---|---|
-| **Responsibility** | Run the quantized neural network on preprocessed images and generate explainability heatmaps |
-| **Trained model?** | ✅ Yes — 3 separate models |
-| **Runs where** | On-device via TensorFlow.js (TFLite WASM backend) |
-| **Input** | Preprocessed tensor from P1 |
-| **Output** | Class probability vector + Grad-CAM activation map |
-| **Key functions** | `load_model()` (cached after first load), `run_inference()` (forward pass → softmax), `generate_gradcam()` (last conv layer activation), `compute_confidence()` (top-1 + margin) |
-| **Performance** | < 500ms on mid-range Android, < 200ms on flagships |
-| **n8n connection** | ❌ None — fully on-device |
+| **Responsibility** | Run YOLO inference on preprocessed images via Hugging Face Spaces API and return detection/classification results |
+| **Trained model?** | ✅ Yes — 3 separate YOLO `.pt` models |
+| **Runs where** | Server-side via Hugging Face Spaces (Gradio API) — called by n8n HTTP Request node or Supabase Edge Function |
+| **Input** | Preprocessed image from P1 (uploaded to Supabase Storage, URL passed to HF Spaces) |
+| **Output** | YOLO detection results: bounding boxes + class labels + confidence scores (for detection models) OR class probability vector (for classification models) |
+| **Key functions** | `call_hf_inference()` (HTTP POST to Gradio predict endpoint), `parse_yolo_output()` (extract boxes/classes/confidence from YOLO results), `generate_annotated_image()` (draw bounding boxes on original), `compute_confidence()` (top-1 class + margin) |
+| **Performance** | < 1s on Hugging Face T4 GPU, < 3s including network round-trip |
+| **n8n connection** | ✅ n8n HTTP Request node → Hugging Face Spaces Gradio API → returns JSON result |
 
 **Models inside P2:**
 
-| Model | Architecture | Trained On | Classes | Size (Quantized) | Dataset Links |
+| Model | Architecture | Trained On | Classes | Export Format & Size | Dataset Links |
 |---|---|---|---|---|---|
-| **Skin Screener** | MobileNetV2 (transfer learning from ImageNet) | HAM10000 + ISIC + Dermnet + Fitzpatrick17k | 11 classes: akiec, bcc, bkl, df, mel, nv, vasc, eczema, psoriasis, fungal, scabies | ~10MB (TFLite int8) | [HAM10000](https://www.kaggle.com/datasets/kmader/skin-cancer-mnist-ham10000), [ISIC 2019](https://www.kaggle.com/datasets/salviohexia/isic-2019-skin-lesion-images-for-classification), [Dermnet](https://www.dermnet.com/images), [Fitzpatrick17k](https://github.com/mattgroh/fitzpatrick17k) |
-| **Eye Screener** | EfficientNet-Lite0 (transfer learning) | ODIR-5K + APTOS 2019 | 8 eye conditions + diabetic retinopathy severity | ~12MB (TFLite int8) | [ODIR-5K](https://www.kaggle.com/datasets/andrewmvd/ocular-disease-recognition-odir5k), [APTOS](https://www.kaggle.com/c/aptos2019-blindness-detection) |
-| **Oral Screener** | EfficientNet-Lite0 (transfer learning) | Oral Cancer Dataset + Dental Conditions | Normal, OSCC, multiple oral conditions | ~12MB (TFLite int8) | [Oral Cancer](https://www.kaggle.com/datasets/zaidpy/oral-cancer-dataset), [Oral Diseases](https://www.kaggle.com/datasets/salmansajid05/oral-diseases) |
+| **Skin Screener** | YOLOv8n-cls (Ultralytics, fine-tuned) | HAM10000 + ISIC + Dermnet + Fitzpatrick17k | 11 classes: akiec, bcc, bkl, df, mel, nv, vasc, eczema, psoriasis, fungal, scabies | `.pt` ~6MB | [HAM10000](https://www.kaggle.com/datasets/kmader/skin-cancer-mnist-ham10000), [ISIC 2019](https://www.kaggle.com/datasets/salviohexia/isic-2019-skin-lesion-images-for-classification), [Dermnet](https://www.dermnet.com/images), [Fitzpatrick17k](https://github.com/mattgroh/fitzpatrick17k) |
+| **Eye Screener** | YOLOv8n-cls (Ultralytics, fine-tuned) | ODIR-5K + APTOS 2019 | 8 eye conditions + diabetic retinopathy severity | `.pt` ~6MB | [ODIR-5K](https://www.kaggle.com/datasets/andrewmvd/ocular-disease-recognition-odir5k), [APTOS](https://www.kaggle.com/c/aptos2019-blindness-detection) |
+| **Oral Screener** | YOLOv8n-cls (Ultralytics, fine-tuned) | Oral Cancer Dataset + Dental Conditions | Normal, OSCC, multiple oral conditions | `.pt` ~6MB | [Oral Cancer](https://www.kaggle.com/datasets/zaidpy/oral-cancer-dataset), [Oral Diseases](https://www.kaggle.com/datasets/salmansajid05/oral-diseases) |
 
 ### Agent P3: Result Interpreter
 
@@ -406,7 +406,7 @@ These agents run **server-side** (Hugging Face Spaces) for MRI, X-ray, and cance
 | Property | Detail |
 |---|---|
 | **Responsibility** | Segment tumor regions from healthy brain tissue in MRI scans |
-| **Trained model?** | ✅ U-Net with ResNet50 encoder |
+| **Trained model?** | ✅ YOLOv8m-seg (Ultralytics segmentation, fine-tuned on brain tumor data) |
 | **Training data** | BraTS 2021 (2,000 scans, 4 modalities) + BraTS 2020 (369 cases) |
 | **Training platform** | Kaggle T4 GPU — ~4–6 hours for 100 epochs |
 | **Input** | Preprocessed MRI tensor from H1 |
@@ -423,7 +423,7 @@ These agents run **server-side** (Hugging Face Spaces) for MRI, X-ray, and cance
 | Property | Detail |
 |---|---|
 | **Responsibility** | Classify the type of brain tumor detected by H2 |
-| **Trained model?** | ✅ ResNet50 (transfer learning from ImageNet → fine-tuned on brain tumor data) |
+| **Trained model?** | ✅ YOLOv8n-cls (Ultralytics classification, fine-tuned on brain tumor data) |
 | **Training data** | Figshare Brain Tumor (3,064 images) + Brain Tumor MRI Kaggle (7,023 images) |
 | **Training platform** | Kaggle T4 GPU — ~2–3 hours for 50 epochs |
 | **Input** | Cropped tumor region from H2's segmentation |
@@ -440,7 +440,7 @@ These agents run **server-side** (Hugging Face Spaces) for MRI, X-ray, and cance
 | Property | Detail |
 |---|---|
 | **Responsibility** | Analyze chest X-rays for multiple pathologies simultaneously |
-| **Trained model?** | ✅ DenseNet-121 / CheXNet-style (transfer learning) |
+| **Trained model?** | ✅ YOLOv8n-cls / YOLOv11-cls (Ultralytics, fine-tuned on chest X-ray data) |
 | **Training data** | CheXpert (224K X-rays) + ChestX-ray14 (112K X-rays) + Montgomery TB (138) + Shenzhen TB (662) |
 | **Training platform** | Kaggle T4 GPU — ~6–8 hours for 50 epochs (large dataset) |
 | **Input** | Preprocessed chest X-ray (PA view) |
@@ -465,8 +465,8 @@ These agents run **server-side** (Hugging Face Spaces) for MRI, X-ray, and cance
 
 | Cancer Type | Architecture | Training Data | Classes | Dataset Links |
 |---|---|---|---|---|
-| **Lung Cancer** | EfficientNet-B4 (TL) | Lung Cancer CT + LUNA16 | Adenocarcinoma, Large Cell, Squamous Cell, Normal | [Lung Cancer CT](https://www.kaggle.com/datasets/mohamedhanyyy/chest-ctscan-images), [LUNA16](https://luna16.grand-challenge.org/), [LIDC-IDRI](https://wiki.cancerimagingarchive.net/display/Public/LIDC-IDRI) |
-| **Breast Cancer** | ResNet50 / DenseNet-121 (TL) | BreakHis + IDC | Malignant, Benign | [BreakHis](https://www.kaggle.com/datasets/ambarish/breakhis), [IDC](https://www.kaggle.com/datasets/paultimothymooney/breast-histopathology-images), [CBIS-DDSM](https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=22516629) |
+| **Lung Cancer** | YOLOv8n-cls (Ultralytics, fine-tuned) | Lung Cancer CT + LUNA16 | Adenocarcinoma, Large Cell, Squamous Cell, Normal | [Lung Cancer CT](https://www.kaggle.com/datasets/mohamedhanyyy/chest-ctscan-images), [LUNA16](https://luna16.grand-challenge.org/), [LIDC-IDRI](https://wiki.cancerimagingarchive.net/display/Public/LIDC-IDRI) |
+| **Breast Cancer** | YOLOv8n-cls (Ultralytics, fine-tuned) | BreakHis + IDC | Malignant, Benign | [BreakHis](https://www.kaggle.com/datasets/ambarish/breakhis), [IDC](https://www.kaggle.com/datasets/paultimothymooney/breast-histopathology-images), [CBIS-DDSM](https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=22516629) |
 
 ### Agent H6: Imaging Result Interpreter
 
@@ -778,70 +778,86 @@ All CV models are trained on **Kaggle Notebooks** (free T4/P100 GPU, 30 hours/we
 
 ### 10.2 Unified Training Pipeline
 
-Every CV model follows the same training pipeline (differing only in dataset, architecture, and classes):
+Every CV model follows the same YOLO training pipeline using **Ultralytics** (differing only in dataset, task type, and classes):
 
 ```python
-# Pseudocode — same structure for ALL models
+# Unified YOLO Training Pipeline — same structure for ALL models
+from ultralytics import YOLO
+import os
 
-# ─── Step 1: Load dataset ───
-dataset = load_kaggle_dataset("dataset-name")
-train, val, test = split(dataset, ratios=[0.7, 0.15, 0.15])
+# ─── Step 1: Prepare dataset in YOLO format ───
+# For classification: organize into folders: dataset/train/class_name/*.jpg
+# For detection/segmentation: YOLO .txt annotation format
+dataset_path = "/kaggle/input/dataset-name"
 
-# ─── Step 2: Preprocessing + augmentation ───
-transforms = Compose([
-    Resize(224, 224),          # Model input size
-    RandomHorizontalFlip(),     # Augmentation
-    RandomRotation(20),
-    ColorJitter(0.2, 0.2),
-    Normalize(mean=[0.485, 0.456, 0.406],  # ImageNet stats
-              std=[0.229, 0.224, 0.225]),
-])
-# Handle class imbalance:
-sampler = WeightedRandomSampler(class_weights)
+# ─── Step 2: Create data.yaml (for detection/segmentation) ───
+# data.yaml:
+# train: /kaggle/input/dataset/train/images
+# val: /kaggle/input/dataset/val/images
+# nc: 11  # number of classes
+# names: ['akiec', 'bcc', 'bkl', 'df', 'mel', 'nv', 'vasc', 'eczema', 'psoriasis', 'fungal', 'scabies']
 
-# ─── Step 3: Load pretrained backbone ───
-model = mobilenet_v2(pretrained=True)  # or efficientnet, resnet50, densenet121
-model.classifier = nn.Linear(1280, num_classes)  # Replace head
+# ─── Step 3: Load pretrained YOLO model ───
+model = YOLO('yolov8n-cls.pt')  # For classification tasks
+# model = YOLO('yolov8m-seg.pt')  # For segmentation tasks (brain tumor)
+# model = YOLO('yolov8n.pt')      # For detection tasks
 
-# ─── Step 4: Phase 1 — Train head only ───
-for param in model.features.parameters():
-    param.requires_grad = False  # Freeze backbone
-optimizer = AdamW(model.classifier.parameters(), lr=1e-3)
-train(model, epochs=10)
+# ─── Step 4: Train with built-in augmentation ───
+results = model.train(
+    data=dataset_path,           # Path to dataset (or data.yaml for detection)
+    epochs=50,                   # Training epochs
+    imgsz=640,                   # YOLO standard input size
+    batch=16,                    # Batch size (adjust for T4 GPU memory)
+    patience=10,                 # Early stopping patience
+    optimizer='AdamW',           # Optimizer
+    lr0=0.001,                   # Initial learning rate
+    lrf=0.01,                    # Final learning rate (cosine decay)
+    augment=True,                # Built-in YOLO augmentation (mosaic, mixup, hsv, flip, etc.)
+    pretrained=True,             # Use COCO pretrained weights as starting point
+    project='arogyamitra',
+    name='skin_screener_v1'
+)
 
-# ─── Step 5: Phase 2 — Fine-tune all ───
-for param in model.parameters():
-    param.requires_grad = True   # Unfreeze everything
-optimizer = AdamW(model.parameters(), lr=1e-4)
-scheduler = CosineAnnealingLR(optimizer, T_max=40)
-train(model, epochs=40, early_stopping=patience_5)
+# ─── Step 5: Evaluate ───
+metrics = model.val()            # Runs validation, generates confusion matrix + metrics
+print(f"Accuracy: {metrics.top1}")
+print(f"mAP50: {metrics.box.map50}" if hasattr(metrics, 'box') else "")
 
-# ─── Step 6: Evaluate ───
-confusion_matrix(test)
-classification_report(test)  # Precision, recall, F1 per class
-plot_gradcam(model, test_samples)
-# Bias audit on Fitzpatrick17k (for skin model)
+# ─── Step 6: Export as .pt file ───
+# The trained model is automatically saved as:
+#   arogyamitra/skin_screener_v1/weights/best.pt
+best_model_path = 'arogyamitra/skin_screener_v1/weights/best.pt'
+print(f"Model saved to: {best_model_path}")
 
-# ─── Step 7: Export ───
-torch.save(model.state_dict(), 'model.pt')
-# Convert: PyTorch → ONNX → TFLite (int8 quantized)
-torch.onnx.export(model, dummy_input, 'model.onnx')
-# Use TFLite converter for on-device deployment
+# ─── Step 7: Test inference ───
+model = YOLO(best_model_path)
+results = model.predict('test_image.jpg', conf=0.25)
+for r in results:
+    print(r.probs.top5)       # Top-5 class indices (classification)
+    print(r.probs.top5conf)   # Top-5 confidences
+    # Or for detection:
+    # print(r.boxes.xyxy)     # Bounding boxes
+    # print(r.boxes.conf)     # Confidences
+    # print(r.boxes.cls)      # Class indices
+
+# ─── Step 8: Deploy to Hugging Face Spaces ───
+# Upload best.pt to HF Spaces with a Gradio app:
+# See §17.2 for the Gradio serving code
 ```
 
 ### 10.3 Model-by-Model Training Schedule
 
-| Model | Architecture | Dataset | Kaggle Time | Epochs | Expected Accuracy |
-|---|---|---|---|---|---|
-| Skin Screener | MobileNetV2 | HAM10000 + ISIC + Dermnet + Fitzpatrick17k | ~3 hours | 50 | 85–92% |
-| Eye Screener | EfficientNet-Lite0 | ODIR-5K + APTOS 2019 | ~2 hours | 50 | 82–88% |
-| Oral Screener | EfficientNet-Lite0 | Oral Cancer + Dental | ~1 hour | 50 | 80–87% |
-| Brain Segmenter | U-Net + ResNet50 | BraTS 2021 + 2020 | ~5 hours | 100 | Dice 0.85–0.90 |
-| Brain Classifier | ResNet50 | Figshare + Brain Tumor MRI | ~3 hours | 50 | 90–95% |
-| X-ray Analyzer | DenseNet-121 | CheXpert + ChestX-ray14 + TB | ~7 hours | 50 | AUC 0.85–0.92 |
-| Lung Cancer | EfficientNet-B4 | Lung Cancer CT + LUNA16 | ~2 hours | 50 | 85–90% |
-| Breast Cancer | ResNet50 | BreakHis + IDC | ~2 hours | 50 | 88–93% |
-| **Total training time** | | | **~25 hours** | | Fits in 1 week of Kaggle quota |
+| Model | Architecture | Dataset | Kaggle Time | Epochs | Expected Accuracy | Export |
+|---|---|---|---|---|---|---|
+| Skin Screener | YOLOv8n-cls | HAM10000 + ISIC + Dermnet + Fitzpatrick17k | ~2 hours | 50 | 85–92% | `best.pt` (~6MB) |
+| Eye Screener | YOLOv8n-cls | ODIR-5K + APTOS 2019 | ~1.5 hours | 50 | 82–88% | `best.pt` (~6MB) |
+| Oral Screener | YOLOv8n-cls | Oral Cancer + Dental | ~1 hour | 50 | 80–87% | `best.pt` (~6MB) |
+| Brain Segmenter | YOLOv8m-seg | BraTS 2021 + 2020 | ~4 hours | 100 | Dice 0.85–0.90 | `best.pt` (~50MB) |
+| Brain Classifier | YOLOv8n-cls | Figshare + Brain Tumor MRI | ~2 hours | 50 | 90–95% | `best.pt` (~6MB) |
+| X-ray Analyzer | YOLOv8n-cls / YOLOv11 | CheXpert + ChestX-ray14 + TB | ~5 hours | 50 | AUC 0.85–0.92 | `best.pt` (~6MB) |
+| Lung Cancer | YOLOv8n-cls | Lung Cancer CT + LUNA16 | ~2 hours | 50 | 85–90% | `best.pt` (~6MB) |
+| Breast Cancer | YOLOv8n-cls | BreakHis + IDC | ~2 hours | 50 | 88–93% | `best.pt` (~6MB) |
+| **Total training time** | | | **~20 hours** | | Fits in 1 week of Kaggle quota | All `.pt` files |
 
 ---
 
@@ -1210,18 +1226,94 @@ flowchart LR
 
 | Model | Trained On | Exported As | Deployed To | Called Via |
 |---|---|---|---|---|
-| Skin Screener | Kaggle | `.tflite` (int8) | PWA (on-device, TensorFlow.js) | Direct in-browser inference |
-| Eye Screener | Kaggle | `.tflite` (int8) | PWA (on-device) | Direct in-browser inference |
-| Oral Screener | Kaggle | `.tflite` (int8) | PWA (on-device) | Direct in-browser inference |
-| Brain Segmenter | Kaggle | `.pt` → Gradio API | Hugging Face Spaces (T4 GPU) | n8n HTTP Request node |
-| Brain Classifier | Kaggle | `.pt` → Gradio API | Hugging Face Spaces | n8n HTTP Request node |
-| X-ray Analyzer | Kaggle | `.pt` → Gradio API | Hugging Face Spaces | n8n HTTP Request node |
-| Lung Cancer | Kaggle | `.pt` → Gradio API | Hugging Face Spaces | n8n HTTP Request node |
-| Breast Cancer | Kaggle | `.pt` → Gradio API | Hugging Face Spaces | n8n HTTP Request node |
+| Skin Screener | Kaggle (YOLOv8n-cls) | `best.pt` | Hugging Face Spaces (Gradio API) | n8n HTTP Request node |
+| Eye Screener | Kaggle (YOLOv8n-cls) | `best.pt` | Hugging Face Spaces (Gradio API) | n8n HTTP Request node |
+| Oral Screener | Kaggle (YOLOv8n-cls) | `best.pt` | Hugging Face Spaces (Gradio API) | n8n HTTP Request node |
+| Brain Segmenter | Kaggle (YOLOv8m-seg) | `best.pt` | Hugging Face Spaces (T4 GPU) | n8n HTTP Request node |
+| Brain Classifier | Kaggle (YOLOv8n-cls) | `best.pt` | Hugging Face Spaces | n8n HTTP Request node |
+| X-ray Analyzer | Kaggle (YOLOv8n-cls) | `best.pt` | Hugging Face Spaces | n8n HTTP Request node |
+| Lung Cancer | Kaggle (YOLOv8n-cls) | `best.pt` | Hugging Face Spaces | n8n HTTP Request node |
+| Breast Cancer | Kaggle (YOLOv8n-cls) | `best.pt` | Hugging Face Spaces | n8n HTTP Request node |
 | Medical NER | Kaggle | `.pt` → API | Hugging Face Spaces or Edge Function | n8n HTTP Request node |
 | Embedder (MiniLM) | Pre-trained | N/A | n8n Embeddings node or Edge Function | n8n built-in node |
 | LLM (Gemma 4) | Pre-trained | N/A | OpenRouter API | n8n AI Agent node |
 | ASR/MT/TTS | Pre-trained | N/A | Bhashini API | n8n HTTP Request node |
+
+### 17.2 Hugging Face Spaces Gradio Serving Code (for .pt models)
+
+Every YOLO `.pt` model is deployed to Hugging Face Spaces using this standard Gradio app:
+
+```python
+# app.py — deployed to Hugging Face Spaces
+import gradio as gr
+from ultralytics import YOLO
+from PIL import Image
+import json
+
+# Load the trained YOLO model
+model = YOLO('best.pt')  # Upload best.pt alongside this app.py
+
+def predict(image):
+    """Run YOLO inference and return structured JSON results."""
+    results = model.predict(image, conf=0.25)
+    r = results[0]
+    
+    # Classification task
+    if hasattr(r, 'probs') and r.probs is not None:
+        top5_indices = r.probs.top5
+        top5_conf = r.probs.top5conf.tolist()
+        class_names = model.names
+        predictions = {
+            class_names[idx]: round(conf, 4)
+            for idx, conf in zip(top5_indices, top5_conf)
+        }
+        return json.dumps({
+            "task": "classification",
+            "predictions": predictions,
+            "top_class": class_names[r.probs.top1],
+            "top_confidence": round(float(r.probs.top1conf), 4)
+        })
+    
+    # Detection task
+    if hasattr(r, 'boxes') and r.boxes is not None:
+        detections = []
+        for box in r.boxes:
+            detections.append({
+                "class": model.names[int(box.cls)],
+                "confidence": round(float(box.conf), 4),
+                "bbox": box.xyxy[0].tolist()
+            })
+        return json.dumps({
+            "task": "detection",
+            "detections": detections,
+            "count": len(detections)
+        })
+    
+    return json.dumps({"error": "No predictions"})
+
+# Gradio interface
+demo = gr.Interface(
+    fn=predict,
+    inputs=gr.Image(type="pil"),
+    outputs=gr.Textbox(label="YOLO Results (JSON)"),
+    title="ArogyaMitra CV Model",
+    description="Upload a medical image for AI screening"
+)
+
+demo.launch()
+```
+
+**n8n connects to this via HTTP Request node:**
+```
+n8n HTTP Request Node:
+  Method: POST
+  URL: https://<username>-<space-name>.hf.space/api/predict
+  Body (JSON): {
+    "data": ["<base64_image_or_url>"]
+  }
+  → Returns JSON with predictions
+  → Parsed by n8n's JSON node → fed to P3 Result Interpreter / H6 Imaging Result Interpreter
+```
 
 ---
 
@@ -1231,17 +1323,17 @@ flowchart LR
 
 | Notebook | Models Trained | GPU Hours | Priority |
 |---|---|---|---|
-| `01_skin_disease_classifier.ipynb` | Skin Screener (MobileNetV2) | ~3h | P0 — Demo critical |
-| `02_eye_disease_classifier.ipynb` | Eye Screener (EfficientNet-Lite0) | ~2h | P1 |
-| `03_oral_disease_classifier.ipynb` | Oral Screener (EfficientNet-Lite0) | ~1h | P1 |
-| `04_brain_tumor_segmenter.ipynb` | Brain Segmenter (U-Net) | ~5h | P0 — Demo critical |
-| `05_brain_tumor_classifier.ipynb` | Brain Classifier (ResNet50) | ~3h | P0 — Demo critical |
-| `06_xray_analyzer.ipynb` | X-ray Analyzer (DenseNet-121) | ~7h | P0 — Demo critical |
-| `07_lung_cancer_classifier.ipynb` | Lung Cancer (EfficientNet-B4) | ~2h | P2 |
-| `08_breast_cancer_classifier.ipynb` | Breast Cancer (ResNet50) | ~2h | P2 |
+| `01_skin_disease_yolo.ipynb` | Skin Screener (YOLOv8n-cls) | ~2h | P0 — Demo critical |
+| `02_eye_disease_yolo.ipynb` | Eye Screener (YOLOv8n-cls) | ~1.5h | P1 |
+| `03_oral_disease_yolo.ipynb` | Oral Screener (YOLOv8n-cls) | ~1h | P1 |
+| `04_brain_tumor_segmenter_yolo.ipynb` | Brain Segmenter (YOLOv8m-seg) | ~4h | P0 — Demo critical |
+| `05_brain_tumor_classifier_yolo.ipynb` | Brain Classifier (YOLOv8n-cls) | ~2h | P0 — Demo critical |
+| `06_xray_analyzer_yolo.ipynb` | X-ray Analyzer (YOLOv8n-cls / YOLOv11) | ~5h | P0 — Demo critical |
+| `07_lung_cancer_yolo.ipynb` | Lung Cancer (YOLOv8n-cls) | ~2h | P2 |
+| `08_breast_cancer_yolo.ipynb` | Breast Cancer (YOLOv8n-cls) | ~2h | P2 |
 | `09_medical_ner.ipynb` | Red-Flag NER (DistilBERT) | ~1h | P0 — Safety critical |
 | `10_rag_ingestion.ipynb` | Document embedding + pgvector ingestion | ~1h (CPU) | P0 — Core feature |
-| **Total** | **10 models** | **~27h** | Fits in 1 week Kaggle quota |
+| **Total** | **10 models** | **~22h** | Fits in 1 week Kaggle quota |
 
 ---
 
