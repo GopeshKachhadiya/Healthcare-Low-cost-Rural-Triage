@@ -167,10 +167,10 @@
       "name": "W2 Note - Red Flag Escalation",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [20, 850],
+      "position": [2920, -100],
       "parameters": {
         "content": "## Workflow 2: Red-Flag Emergency Escalation (Agents: S1 → A1 → M1)\n**Trigger:** Supabase webhook on new `risk_flags` row where `tier in ('orange', 'red')`\n**Description:** Instantly fetches patient details and nearest facility (PostGIS via A2), locates the on-call doctor, sends an urgent WhatsApp/SMS alert within 30–60 seconds, and auto-routes an emergency appointment in the hospital case queue.",
-        "height": 500,
+        "height": 650,
         "width": 2100,
         "color": 1
       }
@@ -180,7 +180,7 @@
       "name": "1. Risk Flag Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [100, 1100],
+      "position": [3000, 200],
       "parameters": {
         "httpMethod": "POST",
         "path": "escalation",
@@ -192,7 +192,7 @@
       "name": "2. Lookup Patient & Vitals Context",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [450, 1100],
+      "position": [3350, 200],
       "parameters": {
         "operation": "get",
         "table": "patients",
@@ -209,7 +209,7 @@
       "name": "3. Agent A2: PostGIS Nearest Hospital Locator",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [800, 1100],
+      "position": [3700, 200],
       "parameters": {
         "method": "POST",
         "url": "https://api.supabase.com/v1/functions/v1/locate-facility",
@@ -227,7 +227,7 @@
       "name": "4. Lookup Assigned On-Call Doctor",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [1150, 1100],
+      "position": [4050, 200],
       "parameters": {
         "operation": "getAll",
         "table": "health_workers",
@@ -246,7 +246,7 @@
       "name": "5. Agent M1: WhatsApp Emergency Alert",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1500, 1100],
+      "position": [4400, 200],
       "parameters": {
         "method": "POST",
         "url": "https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
@@ -275,7 +275,7 @@
       "name": "6. Agent A1: Auto-Create Emergency Appointment",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [1850, 1100],
+      "position": [4750, 200],
       "parameters": {
         "operation": "create",
         "table": "appointments",
@@ -296,10 +296,10 @@
       "name": "W3 Note - CV Result Processing",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [20, 1650],
+      "position": [5120, -100],
       "parameters": {
         "content": "## Workflow 3: CV Result Processing — Hospital Imaging (Agents: H2/H3/H4/H5 → H6 → R3 → R4 → M1)\n**Trigger:** Supabase webhook on new record in `cv_screenings` where `modality in ('mri', 'xray', 'ct', 'histopath')`\n**Description:** Sends image URL to Hugging Face Spaces Gradio API for YOLOv8/YOLOv11 segmentation or classification, logs the prediction to Supabase, generates RAG clinical context for the doctor, and updates the case queue priority.",
-        "height": 550,
+        "height": 650,
         "width": 2150,
         "color": 6
       }
@@ -309,7 +309,7 @@
       "name": "1. CV Screening Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [100, 1900],
+      "position": [5200, 200],
       "parameters": {
         "httpMethod": "POST",
         "path": "cv-processing"
@@ -320,7 +320,7 @@
       "name": "2. Agents H2-H5: Hugging Face Spaces YOLO Inference",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [450, 1900],
+      "position": [5550, 200],
       "parameters": {
         "method": "POST",
         "url": "https://{{ $env.HF_USERNAME }}-anvaya-cv.hf.space/api/predict",
@@ -337,7 +337,7 @@
       "name": "3. Agent H6: Save YOLO Result to Supabase",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [800, 1900],
+      "position": [5900, 200],
       "parameters": {
         "operation": "update",
         "table": "cv_screenings",
@@ -361,7 +361,7 @@
       "name": "4. Agent R3/R4: Fetch RAG Clinical Context",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1150, 1900],
+      "position": [6250, 200],
       "parameters": {
         "method": "POST",
         "url": "={{ $env.N8N_WEBHOOK_BASE_URL }}/rag-chatbot",
@@ -379,7 +379,7 @@
       "name": "5. Check Imaging Severity Tier",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1500, 1900],
+      "position": [6600, 200],
       "parameters": {
         "conditions": {
           "string": [
@@ -402,7 +402,7 @@
       "name": "6a. Agent M1: Alert Radiologist/Doctor",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1850, 1750],
+      "position": [6950, 50],
       "parameters": {
         "method": "POST",
         "url": "={{ $env.N8N_WEBHOOK_BASE_URL }}/escalation",
@@ -421,7 +421,7 @@
       "name": "6b. Update Hospital Case Queue",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [1850, 2050],
+      "position": [6950, 350],
       "parameters": {
         "operation": "update",
         "table": "risk_flags",
@@ -444,10 +444,10 @@
       "name": "W4 Note - Prescription Notification",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [20, 2450],
+      "position": [7370, -100],
       "parameters": {
         "content": "## Workflow 4: Prescription Notification & Translation (Agents: A4 → R1 → A5)\n**Trigger:** Supabase webhook on new `prescriptions` row\n**Description:** Looks up patient language preference, translates prescription instructions into native Indic language (Bhashini MT), checks drug-drug interactions via RAG, and pushes WhatsApp notification with dosage schedule.",
-        "height": 500,
+        "height": 650,
         "width": 1400,
         "color": 3
       }
@@ -457,7 +457,7 @@
       "name": "1. Prescription Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [100, 2700],
+      "position": [7450, 200],
       "parameters": {
         "httpMethod": "POST",
         "path": "prescription-notify"
@@ -468,7 +468,7 @@
       "name": "2. Lookup Patient Native Language",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [450, 2700],
+      "position": [7800, 200],
       "parameters": {
         "operation": "get",
         "table": "patients",
@@ -485,7 +485,7 @@
       "name": "3. Agent R1: Translate Dosage via Bhashini MT",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [800, 2700],
+      "position": [8150, 200],
       "parameters": {
         "method": "POST",
         "url": "https://bhashini.gov.in/api/mt/translate",
@@ -503,7 +503,7 @@
       "name": "4. Send Translated Prescription via WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1150, 2700],
+      "position": [8500, 200],
       "parameters": {
         "method": "POST",
         "url": "https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
@@ -530,10 +530,10 @@
       "name": "W5 Note - Follow-Up Reminders",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [20, 3250],
+      "position": [8870, -100],
       "parameters": {
         "content": "## Workflow 5: Follow-Up Reminders (Agents: A3 → R1 → M3)\n**Trigger:** Schedule Cron (Daily at 9:00 AM)\n**Description:** Scans `follow_ups` table for reminders due today, translates prompt into patient's language, sends WhatsApp/SMS check-in, and waits for interactive response.",
-        "height": 500,
+        "height": 650,
         "width": 1400,
         "color": 5
       }
@@ -543,7 +543,7 @@
       "name": "1. Daily 9AM Follow-Up Cron",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [100, 3500],
+      "position": [8950, 200],
       "parameters": {
         "rule": {
           "interval": [
@@ -557,7 +557,7 @@
       "name": "2. Agent A3: Query Due Follow-Ups",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [450, 3500],
+      "position": [9300, 200],
       "parameters": {
         "operation": "getAll",
         "table": "follow_ups",
@@ -575,7 +575,7 @@
       "name": "3. Send Reminder WhatsApp Check-in",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [800, 3500],
+      "position": [9650, 200],
       "parameters": {
         "method": "POST",
         "url": "https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
@@ -595,7 +595,7 @@
       "name": "4. Agent M3: Mark Reminder Sent",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [1150, 3500],
+      "position": [10000, 200],
       "parameters": {
         "operation": "update",
         "table": "follow_ups",
@@ -618,10 +618,10 @@
       "name": "W6 Note - Daily Doctor Digest",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [20, 4050],
+      "position": [10370, -100],
       "parameters": {
         "content": "## Workflow 6: Daily Doctor Digest (Agents: M1 → M3)\n**Trigger:** Schedule Cron (Daily at 8:00 AM)\n**Description:** Aggregates pending Orange/Yellow cases, unreviewed CV imaging screenings, and due follow-ups per doctor, delivering a structured morning summary.",
-        "height": 500,
+        "height": 650,
         "width": 1050,
         "color": 2
       }
@@ -631,7 +631,7 @@
       "name": "1. Daily 8AM Digest Cron",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [100, 4300],
+      "position": [10450, 200],
       "parameters": {
         "rule": {
           "interval": [
@@ -645,7 +645,7 @@
       "name": "2. Agent M1: Query Pending Cases",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [450, 4300],
+      "position": [10800, 200],
       "parameters": {
         "operation": "getAll",
         "table": "risk_flags",
@@ -662,7 +662,7 @@
       "name": "3. Send Morning Summary Email/WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [800, 4300],
+      "position": [11150, 200],
       "parameters": {
         "method": "POST",
         "url": "https://api.resend.com/emails",
@@ -689,10 +689,10 @@
       "name": "W7 Note - Appointment Routing",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [20, 4850],
+      "position": [11520, -100],
       "parameters": {
         "content": "## Workflow 7: Appointment Routing (Agents: A1 → A2 → M1)\n**Trigger:** Supabase webhook on new `appointments` row\n**Description:** Checks appointment urgency tier. If Red/Orange, triggers immediate doctor WhatsApp alert. If Yellow/Green, queues into the routine daily digest batch.",
-        "height": 550,
+        "height": 650,
         "width": 1100,
         "color": 4
       }
@@ -702,7 +702,7 @@
       "name": "1. Appointment Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [100, 5100],
+      "position": [11600, 200],
       "parameters": {
         "httpMethod": "POST",
         "path": "appointment-routing"
@@ -713,7 +713,7 @@
       "name": "2. IF Urgent Tier (Red/Orange)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [450, 5100],
+      "position": [11950, 200],
       "parameters": {
         "conditions": {
           "string": [
@@ -728,7 +728,7 @@
       "name": "3a. Send Urgent WhatsApp Doctor Alert",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [800, 4950],
+      "position": [12300, 50],
       "parameters": {
         "method": "POST",
         "url": "={{ $env.N8N_WEBHOOK_BASE_URL }}/escalation",
@@ -746,7 +746,7 @@
       "name": "3b. Log to Routine Queue",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [800, 5250],
+      "position": [12300, 350],
       "parameters": {
         "operation": "update",
         "table": "appointments",
@@ -769,10 +769,10 @@
       "name": "W8 Note - WhatsApp Bot",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [20, 5650],
+      "position": [12720, -100],
       "parameters": {
         "content": "## Workflow 8: WhatsApp Bot Zero-Install Access (Agents: R1 → R2 → R3 → R4 → R5 + S1)\n**Trigger:** WhatsApp message webhook via Cloud API\n**Description:** Provides full medical RAG triage and appointment booking over standard WhatsApp without requiring any app download in rural areas.",
-        "height": 500,
+        "height": 650,
         "width": 750,
         "color": 1
       }
@@ -782,7 +782,7 @@
       "name": "1. WhatsApp Cloud API Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [100, 5900],
+      "position": [12800, 200],
       "parameters": {
         "httpMethod": "POST",
         "path": "whatsapp-bot"
@@ -793,7 +793,7 @@
       "name": "2. Forward to RAG Chatbot Workflow",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [450, 5900],
+      "position": [13150, 200],
       "parameters": {
         "method": "POST",
         "url": "={{ $env.N8N_WEBHOOK_BASE_URL }}/rag-chatbot",
@@ -812,10 +812,10 @@
       "name": "W9 Note - Area Disease Aggregation",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [20, 6450],
+      "position": [13570, -100],
       "parameters": {
         "content": "## Workflow 9: Area Disease Aggregation & Outbreak Alert (Agent: M2)\n**Trigger:** Schedule Cron (Daily at Midnight)\n**Description:** Aggregates disease categories by village/district. Enforces k-anonymity (suppresses counts < 5). If cluster anomaly exceeds threshold, fires outbreak notification to District Health Admin.",
-        "height": 500,
+        "height": 650,
         "width": 1400,
         "color": 6
       }
@@ -825,7 +825,7 @@
       "name": "1. Midnight Aggregation Cron",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [100, 6700],
+      "position": [13650, 200],
       "parameters": {
         "rule": {
           "interval": [
@@ -839,7 +839,7 @@
       "name": "2. Agent M2: Run SQL Aggregation",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [450, 6700],
+      "position": [14000, 200],
       "parameters": {
         "method": "POST",
         "url": "https://api.supabase.com/v1/functions/v1/aggregate-outbreaks",
@@ -856,7 +856,7 @@
       "name": "3. IF Outbreak Cluster Detected",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [800, 6700],
+      "position": [14350, 200],
       "parameters": {
         "conditions": {
           "boolean": [
@@ -870,7 +870,7 @@
       "name": "4. Send Outbreak Alert to District Admin",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1150, 6700],
+      "position": [14700, 200],
       "parameters": {
         "method": "POST",
         "url": "https://api.resend.com/emails",
@@ -891,10 +891,10 @@
       "name": "W10 Note - Referral Notification",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [20, 7250],
+      "position": [15070, -100],
       "parameters": {
         "content": "## Workflow 10: Referral Notification (Agent: A6)\n**Trigger:** Supabase webhook on new `referrals` row\n**Description:** Assembles complete patient medical history packet, generates summary PDF/payload, and simultaneously notifies patient (with travel directions) and receiving tertiary hospital.",
-        "height": 500,
+        "height": 650,
         "width": 1050,
         "color": 3
       }
@@ -904,7 +904,7 @@
       "name": "1. Referral Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [100, 7500],
+      "position": [15150, 200],
       "parameters": {
         "httpMethod": "POST",
         "path": "referral-notify"
@@ -915,7 +915,7 @@
       "name": "2. Agent A6: Assemble Referral Packet",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [450, 7500],
+      "position": [15500, 200],
       "parameters": {
         "operation": "get",
         "table": "patients",
@@ -932,7 +932,7 @@
       "name": "3. Send WhatsApp Referral Packet to Tertiary Hospital",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [800, 7500],
+      "position": [15850, 200],
       "parameters": {
         "method": "POST",
         "url": "https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
@@ -953,10 +953,10 @@
       "name": "W11 Note - Aging Case Alert",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [20, 8050],
+      "position": [16220, -100],
       "parameters": {
         "content": "## Workflow 11: Aging Case Alert (Agent: M1)\n**Trigger:** Schedule Cron (Every 1 Hour)\n**Description:** Scans hospital queue for unreviewed Orange cases > 2 hours or Yellow cases > 24 hours. Pushes urgent reminder to assigned doctor to prevent patient neglect.",
-        "height": 500,
+        "height": 650,
         "width": 1400,
         "color": 5
       }
@@ -966,7 +966,7 @@
       "name": "1. Hourly Queue Age Cron",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [100, 8300],
+      "position": [16300, 200],
       "parameters": {
         "rule": {
           "interval": [
@@ -980,7 +980,7 @@
       "name": "2. Agent M1: Query Unreviewed Aging Cases",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [450, 8300],
+      "position": [16650, 200],
       "parameters": {
         "operation": "getAll",
         "table": "risk_flags",
@@ -998,7 +998,7 @@
       "name": "3. IF Old Cases Found (> 2h)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [800, 8300],
+      "position": [17000, 200],
       "parameters": {
         "conditions": {
           "number": [
@@ -1012,7 +1012,7 @@
       "name": "4. Send Urgent Aging Alert WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1150, 8300],
+      "position": [17350, 200],
       "parameters": {
         "method": "POST",
         "url": "https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
