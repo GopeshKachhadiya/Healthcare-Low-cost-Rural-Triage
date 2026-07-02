@@ -113,12 +113,15 @@
     },
     {
       "id": "w1-embed",
-      "name": "5b. Agent R3: Embed Query (Multilingual MiniLM)",
+      "name": "5b. Agent R3: Embed Query (OpenRouter Embeddings)",
       "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
       "typeVersion": 1,
       "position": [1500, 350],
       "parameters": {
-        "model": "text-embedding-3-small"
+        "modelName": "text-embedding-3-small",
+        "options": {
+          "baseURL": "https://openrouter.ai/api/v1"
+        }
       }
     },
     {
@@ -130,6 +133,19 @@
       "parameters": {
         "tableName": "rag_documents",
         "topK": 5
+      }
+    },
+    {
+      "id": "w1-openrouter-model",
+      "name": "OpenRouter Chat Model (Gemma 4 31B)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [2200, 350],
+      "parameters": {
+        "model": "google/gemma-4-31b-it:free",
+        "options": {
+          "baseURL": "https://openrouter.ai/api/v1"
+        }
       }
     },
     {
@@ -1056,11 +1072,11 @@
           { "node": "5a. Bypass RAG -> Immediate Emergency Alert", "type": "main", "index": 0 }
         ],
         [
-          { "node": "5b. Agent R3: Embed Query (Multilingual MiniLM)", "type": "main", "index": 0 }
+          { "node": "5b. Agent R3: Embed Query (OpenRouter Embeddings)", "type": "main", "index": 0 }
         ]
       ]
     },
-    "5b. Agent R3: Embed Query (Multilingual MiniLM)": {
+    "5b. Agent R3: Embed Query (OpenRouter Embeddings)": {
       "ai_embedding": [
         [
           { "node": "6. Agent R3: Supabase pgvector Vector Store", "type": "ai_embedding", "index": 0 }
@@ -1071,6 +1087,13 @@
       "ai_tool": [
         [
           { "node": "7. Agent R4: Grounded Generator (Gemma 4 31B)", "type": "ai_tool", "index": 0 }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model (Gemma 4 31B)": {
+      "ai_languageModel": [
+        [
+          { "node": "7. Agent R4: Grounded Generator (Gemma 4 31B)", "type": "ai_languageModel", "index": 0 }
         ]
       ]
     },
