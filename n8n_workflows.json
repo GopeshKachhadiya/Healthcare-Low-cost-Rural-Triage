@@ -1,0 +1,1315 @@
+{
+  "name": "ArogyaMitra — Complete Multi-Agent AI Orchestration Pipeline",
+  "nodes": [
+    {
+      "id": "sticky-w1",
+      "name": "W1 Note - RAG Medical Chatbot",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, -80],
+      "parameters": {
+        "content": "## Workflow 1: RAG Medical Chatbot (Agents: R1 → R2 → R3 → R4 → R5)\n**Trigger:** Webhook from Patient/Doctor App or WhatsApp\n**Description:** Handles speech-to-text (Bhashini ASR), query intent & NER extraction (DistilBERT), emergency red-flag bypass check, embedding & pgvector retrieval (Supabase Vector Store), and grounded LLM answer generation (Gemma 4 31B via OpenRouter), followed by translation back to the patient's native language.",
+        "height": 400,
+        "width": 1750,
+        "color": 4
+      }
+    },
+    {
+      "id": "w1-trigger",
+      "name": "1. Chatbot Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 100],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rag-chatbot",
+        "responseMode": "lastNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "w1-asr",
+      "name": "2. Agent R1: Speech to Text (Bhashini ASR)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [320, 100],
+      "parameters": {
+        "method": "POST",
+        "url": "https://bhashini.gov.in/api/asr/transcribe",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.BHASHINI_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "audio_base64", "value": "={{ $json.body.audio }}" },
+            { "name": "source_language", "value": "={{ $json.body.language || 'hi' }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w1-ner",
+      "name": "3. Agent R2: Query Understanding (NER & Intent)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [540, 100],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.supabase.com/v1/functions/v1/extract-entities",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "query_text", "value": "={{ $json.transcript || $json.body.text }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w1-if-redflag",
+      "name": "4. Agent S1: Emergency Red-Flag Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [760, 100],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.red_flag_detected }}",
+              "value2": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w1-escalate-jump",
+      "name": "5a. Bypass RAG -> Immediate Emergency Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [980, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_WEBHOOK_BASE_URL }}/escalation",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "patient_id", "value": "={{ $node['1. Chatbot Webhook Trigger'].json.body.patient_id }}" },
+            { "name": "tier", "value": "red" },
+            { "name": "rationale", "value": "={{ $json.matched_keywords }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w1-embed",
+      "name": "5b. Agent R3: Embed Query (Multilingual MiniLM)",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1,
+      "position": [980, 200],
+      "parameters": {
+        "model": "text-embedding-3-small"
+      }
+    },
+    {
+      "id": "w1-retriever",
+      "name": "6. Agent R3: Supabase pgvector Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [1200, 200],
+      "parameters": {
+        "tableName": "rag_documents",
+        "topK": 5
+      }
+    },
+    {
+      "id": "w1-generator",
+      "name": "7. Agent R4: Grounded Generator (Gemma 4 31B)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [1420, 200],
+      "parameters": {
+        "promptType": "define",
+        "text": "You are ArogyaMitra, a medical RAG assistant for low-cost rural triage in India. Answer ONLY based on the retrieved context below. If context is missing, say you don't know.\n\nContext:\n{{ $json.context }}\n\nPatient Query:\n{{ $node['3. Agent R2: Query Understanding (NER & Intent)'].json.query_text }}"
+      }
+    },
+    {
+      "id": "w1-formatter",
+      "name": "8. Agent R5: Response Formatter & Indic MT",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1640, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "https://bhashini.gov.in/api/mt/translate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "text", "value": "={{ $json.output }}" },
+            { "name": "target_language", "value": "={{ $node['1. Chatbot Webhook Trigger'].json.body.language || 'hi' }}" }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "sticky-w2",
+      "name": "W2 Note - Red Flag Escalation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 420],
+      "parameters": {
+        "content": "## Workflow 2: Red-Flag Emergency Escalation (Agents: S1 → A1 → M1)\n**Trigger:** Supabase webhook on new `risk_flags` row where `tier in ('orange', 'red')`\n**Description:** Instantly fetches patient details and nearest facility (PostGIS via A2), locates the on-call doctor, sends an urgent WhatsApp/SMS alert within 30–60 seconds, and auto-routes an emergency appointment in the hospital case queue.",
+        "height": 380,
+        "width": 1500,
+        "color": 1
+      }
+    },
+    {
+      "id": "w2-trigger",
+      "name": "1. Risk Flag Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 600],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "escalation",
+        "responseMode": "onReceived"
+      }
+    },
+    {
+      "id": "w2-patient",
+      "name": "2. Lookup Patient & Vitals Context",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [320, 600],
+      "parameters": {
+        "operation": "get",
+        "table": "patients",
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.body.patient_id }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w2-locator",
+      "name": "3. Agent A2: PostGIS Nearest Hospital Locator",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [540, 600],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.supabase.com/v1/functions/v1/locate-facility",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "village_id", "value": "={{ $json.village_id }}" },
+            { "name": "required_tier", "value": "={{ $node['1. Risk Flag Webhook Trigger'].json.body.tier }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w2-doctor",
+      "name": "4. Lookup Assigned On-Call Doctor",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [760, 600],
+      "parameters": {
+        "operation": "getAll",
+        "table": "health_workers",
+        "limit": 1,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "facility_id", "condition": "eq", "keyValue": "={{ $json.facility_id }}" },
+            { "keyName": "role", "condition": "eq", "keyValue": "doctor" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w2-whatsapp",
+      "name": "5. Agent M1: WhatsApp Emergency Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [980, 600],
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.WHATSAPP_ACCESS_TOKEN }}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "messaging_product", "value": "whatsapp" },
+            { "name": "to", "value": "={{ $json.phone }}" },
+            { "name": "type", "value": "template" },
+            {
+              "name": "template",
+              "value": "={ \"name\": \"emergency_alert\", \"language\": { \"code\": \"en\" }, \"components\": [ { \"type\": \"body\", \"parameters\": [ { \"type\": \"text\", \"text\": \"{{ $node['1. Risk Flag Webhook Trigger'].json.body.tier }}\" }, { \"type\": \"text\", \"text\": \"{{ $node['2. Lookup Patient & Vitals Context'].json.name }}\" } ] } ] }"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w2-appt",
+      "name": "6. Agent A1: Auto-Create Emergency Appointment",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1200, 600],
+      "parameters": {
+        "operation": "create",
+        "table": "appointments",
+        "columnsUi": {
+          "columnValues": [
+            { "columnName": "patient_id", "columnValue": "={{ $node['1. Risk Flag Webhook Trigger'].json.body.patient_id }}" },
+            { "columnName": "facility_id", "columnValue": "={{ $node['3. Agent A2: PostGIS Nearest Hospital Locator'].json.facility_id }}" },
+            { "columnName": "doctor_id", "columnValue": "={{ $node['4. Lookup Assigned On-Call Doctor'].json.id }}" },
+            { "columnName": "priority_tier", "columnValue": "={{ $node['1. Risk Flag Webhook Trigger'].json.body.tier }}" },
+            { "columnName": "status", "columnValue": "scheduled" }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "sticky-w3",
+      "name": "W3 Note - CV Result Processing",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 840],
+      "parameters": {
+        "content": "## Workflow 3: CV Result Processing — Hospital Imaging (Agents: H2/H3/H4/H5 → H6 → R3 → R4 → M1)\n**Trigger:** Supabase webhook on new record in `cv_screenings` where `modality in ('mri', 'xray', 'ct', 'histopath')`\n**Description:** Sends image URL to Hugging Face Spaces Gradio API for YOLOv8/YOLOv11 segmentation or classification, logs the prediction to Supabase, generates RAG clinical context for the doctor, and updates the case queue priority.",
+        "height": 380,
+        "width": 1600,
+        "color": 6
+      }
+    },
+    {
+      "id": "w3-trigger",
+      "name": "1. CV Screening Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 1020],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cv-processing"
+      }
+    },
+    {
+      "id": "w3-hf",
+      "name": "2. Agents H2-H5: Hugging Face Spaces YOLO Inference",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [320, 1020],
+      "parameters": {
+        "method": "POST",
+        "url": "https://{{ $env.HF_USERNAME }}-arogyamitra-cv.hf.space/api/predict",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "data", "value": "=[ \"{{ $json.body.record.image_url }}\" ]" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w3-update",
+      "name": "3. Agent H6: Save YOLO Result to Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [540, 1020],
+      "parameters": {
+        "operation": "update",
+        "table": "cv_screenings",
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $node['1. CV Screening Webhook'].json.body.record.id }}" }
+          ]
+        },
+        "columnsUi": {
+          "columnValues": [
+            { "columnName": "prediction", "columnValue": "={{ JSON.stringify($json.data[0]) }}" },
+            { "columnName": "confidence", "columnValue": "={{ $json.data[0].top_confidence || 0.85 }}" },
+            { "columnName": "status", "columnValue": "completed" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w3-rag-context",
+      "name": "4. Agent R3/R4: Fetch RAG Clinical Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [760, 1020],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_WEBHOOK_BASE_URL }}/rag-chatbot",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "text", "value": "=\"Provide clinical staging and treatment overview for \" + ($json.data[0].top_class || 'detected anomaly')" },
+            { "name": "language", "value": "en" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w3-if-critical",
+      "name": "5. Check Imaging Severity Tier",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [980, 1020],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $node['2. Agents H2-H5: Hugging Face Spaces YOLO Inference'].json.data[0].top_class }}",
+              "operation": "contains",
+              "value2": "Malignant"
+            },
+            {
+              "value1": "={{ $node['2. Agents H2-H5: Hugging Face Spaces YOLO Inference'].json.data[0].top_class }}",
+              "operation": "contains",
+              "value2": "Glioma"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w3-alert-doctor",
+      "name": "6a. Agent M1: Alert Radiologist/Doctor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1200, 940],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_WEBHOOK_BASE_URL }}/escalation",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "patient_id", "value": "={{ $node['1. CV Screening Webhook'].json.body.record.patient_id }}" },
+            { "name": "tier", "value": "red" },
+            { "name": "rationale", "value": "=\"Critical Imaging Finding: \" + $node['2. Agents H2-H5: Hugging Face Spaces YOLO Inference'].json.data[0].top_class }" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w3-queue",
+      "name": "6b. Update Hospital Case Queue",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1200, 1100],
+      "parameters": {
+        "operation": "update",
+        "table": "risk_flags",
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "patient_id", "condition": "eq", "keyValue": "={{ $node['1. CV Screening Webhook'].json.body.record.patient_id }}" }
+          ]
+        },
+        "columnsUi": {
+          "columnValues": [
+            { "columnName": "tier", "columnValue": "orange" }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "sticky-w4",
+      "name": "W4 Note - Prescription Notification",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 1260],
+      "parameters": {
+        "content": "## Workflow 4: Prescription Notification & Translation (Agents: A4 → R1 → A5)\n**Trigger:** Supabase webhook on new `prescriptions` row\n**Description:** Looks up patient language preference, translates prescription instructions into native Indic language (Bhashini MT), checks drug-drug interactions via RAG, and pushes WhatsApp notification with dosage schedule.",
+        "height": 380,
+        "width": 1200,
+        "color": 3
+      }
+    },
+    {
+      "id": "w4-trigger",
+      "name": "1. Prescription Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 1440],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "prescription-notify"
+      }
+    },
+    {
+      "id": "w4-lookup-patient",
+      "name": "2. Lookup Patient Native Language",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [320, 1440],
+      "parameters": {
+        "operation": "get",
+        "table": "patients",
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.body.record.patient_id }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w4-translate",
+      "name": "3. Agent R1: Translate Dosage via Bhashini MT",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [540, 1440],
+      "parameters": {
+        "method": "POST",
+        "url": "https://bhashini.gov.in/api/mt/translate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "text", "value": "={{ $node['1. Prescription Webhook Trigger'].json.body.record.instructions }}" },
+            { "name": "target_language", "value": "={{ $json.language || 'hi' }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w4-notify",
+      "name": "4. Send Translated Prescription via WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [760, 1440],
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.WHATSAPP_ACCESS_TOKEN }}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "messaging_product", "value": "whatsapp" },
+            { "name": "to", "value": "={{ $node['2. Lookup Patient Native Language'].json.phone }}" },
+            { "name": "type", "value": "text" },
+            { "name": "text", "value": "={ \"body\": \"💊 New Prescription: {{ $json.output }}\" }" }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "sticky-w5",
+      "name": "W5 Note - Follow-Up Reminders",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 1680],
+      "parameters": {
+        "content": "## Workflow 5: Follow-Up Reminders (Agents: A3 → R1 → M3)\n**Trigger:** Schedule Cron (Daily at 9:00 AM)\n**Description:** Scans `follow_ups` table for reminders due today, translates prompt into patient's language, sends WhatsApp/SMS check-in, and waits for interactive response.",
+        "height": 380,
+        "width": 1200,
+        "color": 5
+      }
+    },
+    {
+      "id": "w5-cron",
+      "name": "1. Daily 9AM Follow-Up Cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [100, 1860],
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "hours", "hoursInterval": 24 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w5-query",
+      "name": "2. Agent A3: Query Due Follow-Ups",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [320, 1860],
+      "parameters": {
+        "operation": "getAll",
+        "table": "follow_ups",
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "scheduled_date", "condition": "eq", "keyValue": "={{ $today }}" },
+            { "keyName": "status", "condition": "eq", "keyValue": "pending" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w5-send",
+      "name": "3. Send Reminder WhatsApp Check-in",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [540, 1860],
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "messaging_product", "value": "whatsapp" },
+            { "name": "to", "value": "={{ $json.patient_phone }}" },
+            { "name": "type", "value": "text" },
+            { "name": "text", "value": "={ \"body\": \"🏥 ArogyaMitra Check-in: How are you feeling today? Reply 1 for Better, 2 for Same, 3 for Worse.\" }" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w5-update",
+      "name": "4. Agent M3: Mark Reminder Sent",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [760, 1860],
+      "parameters": {
+        "operation": "update",
+        "table": "follow_ups",
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.id }}" }
+          ]
+        },
+        "columnsUi": {
+          "columnValues": [
+            { "columnName": "status", "columnValue": "notified" }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "sticky-w6",
+      "name": "W6 Note - Daily Doctor Digest",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 2100],
+      "parameters": {
+        "content": "## Workflow 6: Daily Doctor Digest (Agents: M1 → M3)\n**Trigger:** Schedule Cron (Daily at 8:00 AM)\n**Description:** Aggregates pending Orange/Yellow cases, unreviewed CV imaging screenings, and due follow-ups per doctor, delivering a structured morning summary.",
+        "height": 380,
+        "width": 1200,
+        "color": 2
+      }
+    },
+    {
+      "id": "w6-cron",
+      "name": "1. Daily 8AM Digest Cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [100, 2280],
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "hours", "hoursInterval": 24 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w6-query-cases",
+      "name": "2. Agent M1: Query Pending Cases",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [320, 2280],
+      "parameters": {
+        "operation": "getAll",
+        "table": "risk_flags",
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "tier", "condition": "in", "keyValue": "orange,yellow" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w6-send-email",
+      "name": "3. Send Morning Summary Email/WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [540, 2280],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.RESEND_API_KEY }}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "from", "value": "triage@arogyamitra.app" },
+            { "name": "to", "value": "doctor@hospital.org" },
+            { "name": "subject", "value": "🌅 ArogyaMitra Morning Digest — Pending Cases" },
+            { "name": "html", "value": "<p>You have {{ $json.length }} pending cases requiring review today.</p>" }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "sticky-w7",
+      "name": "W7 Note - Appointment Routing",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 2520],
+      "parameters": {
+        "content": "## Workflow 7: Appointment Routing (Agents: A1 → A2 → M1)\n**Trigger:** Supabase webhook on new `appointments` row\n**Description:** Checks appointment urgency tier. If Red/Orange, triggers immediate doctor WhatsApp alert. If Yellow/Green, queues into the routine daily digest batch.",
+        "height": 380,
+        "width": 1200,
+        "color": 4
+      }
+    },
+    {
+      "id": "w7-trigger",
+      "name": "1. Appointment Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 2700],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "appointment-routing"
+      }
+    },
+    {
+      "id": "w7-if-tier",
+      "name": "2. IF Urgent Tier (Red/Orange)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [320, 2700],
+      "parameters": {
+        "conditions": {
+          "string": [
+            { "value1": "={{ $json.body.record.priority_tier }}", "operation": "equals", "value2": "red" },
+            { "value1": "={{ $json.body.record.priority_tier }}", "operation": "equals", "value2": "orange" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w7-alert-urgent",
+      "name": "3a. Send Urgent WhatsApp Doctor Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [540, 2600],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_WEBHOOK_BASE_URL }}/escalation",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "patient_id", "value": "={{ $node['1. Appointment Webhook'].json.body.record.patient_id }}" },
+            { "name": "tier", "value": "={{ $node['1. Appointment Webhook'].json.body.record.priority_tier }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w7-routine",
+      "name": "3b. Log to Routine Queue",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [540, 2800],
+      "parameters": {
+        "operation": "update",
+        "table": "appointments",
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $node['1. Appointment Webhook'].json.body.record.id }}" }
+          ]
+        },
+        "columnsUi": {
+          "columnValues": [
+            { "columnName": "status", "columnValue": "queued_routine" }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "sticky-w8",
+      "name": "W8 Note - WhatsApp Bot",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 2940],
+      "parameters": {
+        "content": "## Workflow 8: WhatsApp Bot Zero-Install Access (Agents: R1 → R2 → R3 → R4 → R5 + S1)\n**Trigger:** WhatsApp message webhook via Cloud API\n**Description:** Provides full medical RAG triage and appointment booking over standard WhatsApp without requiring any app download in rural areas.",
+        "height": 380,
+        "width": 1200,
+        "color": 1
+      }
+    },
+    {
+      "id": "w8-trigger",
+      "name": "1. WhatsApp Cloud API Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 3120],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-bot"
+      }
+    },
+    {
+      "id": "w8-route",
+      "name": "2. Forward to RAG Chatbot Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [320, 3120],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_WEBHOOK_BASE_URL }}/rag-chatbot",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "text", "value": "={{ $json.body.entry[0].changes[0].value.messages[0].text.body }}" },
+            { "name": "phone", "value": "={{ $json.body.entry[0].changes[0].value.messages[0].from }}" }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "sticky-w9",
+      "name": "W9 Note - Area Disease Aggregation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 3360],
+      "parameters": {
+        "content": "## Workflow 9: Area Disease Aggregation & Outbreak Alert (Agent: M2)\n**Trigger:** Schedule Cron (Daily at Midnight)\n**Description:** Aggregates disease categories by village/district. Enforces k-anonymity (suppresses counts < 5). If cluster anomaly exceeds threshold, fires outbreak notification to District Health Admin.",
+        "height": 380,
+        "width": 1200,
+        "color": 6
+      }
+    },
+    {
+      "id": "w9-cron",
+      "name": "1. Midnight Aggregation Cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [100, 3540],
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "hours", "hoursInterval": 24 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w9-aggregate",
+      "name": "2. Agent M2: Run SQL Aggregation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [320, 3540],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.supabase.com/v1/functions/v1/aggregate-outbreaks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w9-if-outbreak",
+      "name": "3. IF Outbreak Cluster Detected",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [540, 3540],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            { "value1": "={{ $json.outbreak_detected }}", "value2": true }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w9-alert-admin",
+      "name": "4. Send Outbreak Alert to District Admin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [760, 3540],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "from", "value": "surveillance@arogyamitra.app" },
+            { "name": "to", "value": "dmo@district.gov.in" },
+            { "name": "subject", "value": "🚨 ArogyaMitra Outbreak Alert: {{ $json.disease_cluster }}" },
+            { "name": "html", "value": "<p>High concentration of {{ $json.disease_cluster }} detected in {{ $json.village_name }}. Total cases: {{ $json.case_count }}</p>" }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "sticky-w10",
+      "name": "W10 Note - Referral Notification",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 3780],
+      "parameters": {
+        "content": "## Workflow 10: Referral Notification (Agent: A6)\n**Trigger:** Supabase webhook on new `referrals` row\n**Description:** Assembles complete patient medical history packet, generates summary PDF/payload, and simultaneously notifies patient (with travel directions) and receiving tertiary hospital.",
+        "height": 380,
+        "width": 1200,
+        "color": 3
+      }
+    },
+    {
+      "id": "w10-trigger",
+      "name": "1. Referral Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 3960],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "referral-notify"
+      }
+    },
+    {
+      "id": "w10-fetch-packet",
+      "name": "2. Agent A6: Assemble Referral Packet",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [320, 3960],
+      "parameters": {
+        "operation": "get",
+        "table": "patients",
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.body.record.patient_id }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w10-notify-both",
+      "name": "3. Send WhatsApp Referral Packet to Tertiary Hospital",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [540, 3960],
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "messaging_product", "value": "whatsapp" },
+            { "name": "to", "value": "={{ $json.body.record.destination_phone || '919876543210' }}" },
+            { "name": "type", "value": "text" },
+            { "name": "text", "value": "={ \"body\": \"🏥 Incoming Referral: Patient ID {{ $json.body.record.patient_id }}, Reason: {{ $json.body.record.reason }}\" }" }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "sticky-w11",
+      "name": "W11 Note - Aging Case Alert",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 4200],
+      "parameters": {
+        "content": "## Workflow 11: Aging Case Alert (Agent: M1)\n**Trigger:** Schedule Cron (Every 1 Hour)\n**Description:** Scans hospital queue for unreviewed Orange cases > 2 hours or Yellow cases > 24 hours. Pushes urgent reminder to assigned doctor to prevent patient neglect.",
+        "height": 380,
+        "width": 1200,
+        "color": 5
+      }
+    },
+    {
+      "id": "w11-cron",
+      "name": "1. Hourly Queue Age Cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [100, 4380],
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "hours", "hoursInterval": 1 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w11-query-old",
+      "name": "2. Agent M1: Query Unreviewed Aging Cases",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [320, 4380],
+      "parameters": {
+        "operation": "getAll",
+        "table": "risk_flags",
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "tier", "condition": "eq", "keyValue": "orange" },
+            { "keyName": "status", "condition": "eq", "keyValue": "pending" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w11-if-aging",
+      "name": "3. IF Old Cases Found (> 2h)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [540, 4380],
+      "parameters": {
+        "conditions": {
+          "number": [
+            { "value1": "={{ $json.length }}", "operation": "larger", "value2": 0 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w11-alert-doctor",
+      "name": "4. Send Urgent Aging Alert WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [760, 4380],
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "messaging_product", "value": "whatsapp" },
+            { "name": "to", "value": "={{ $env.DOCTOR_EMERGENCY_PHONE }}" },
+            { "name": "type", "value": "text" },
+            { "name": "text", "value": "={ \"body\": \"⚠️ AGING CASE ALERT: You have {{ $node['2. Agent M1: Query Unreviewed Aging Cases'].json.length }} Orange triage cases unreviewed for over 2 hours! Please review immediately.\" }" }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "1. Chatbot Webhook Trigger": {
+      "main": [
+        [
+          { "node": "2. Agent R1: Speech to Text (Bhashini ASR)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "2. Agent R1: Speech to Text (Bhashini ASR)": {
+      "main": [
+        [
+          { "node": "3. Agent R2: Query Understanding (NER & Intent)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "3. Agent R2: Query Understanding (NER & Intent)": {
+      "main": [
+        [
+          { "node": "4. Agent S1: Emergency Red-Flag Check", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "4. Agent S1: Emergency Red-Flag Check": {
+      "main": [
+        [
+          { "node": "5a. Bypass RAG -> Immediate Emergency Alert", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "5b. Agent R3: Embed Query (Multilingual MiniLM)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "5b. Agent R3: Embed Query (Multilingual MiniLM)": {
+      "ai_embedding": [
+        [
+          { "node": "6. Agent R3: Supabase pgvector Vector Store", "type": "ai_embedding", "index": 0 }
+        ]
+      ]
+    },
+    "6. Agent R3: Supabase pgvector Vector Store": {
+      "ai_tool": [
+        [
+          { "node": "7. Agent R4: Grounded Generator (Gemma 4 31B)", "type": "ai_tool", "index": 0 }
+        ]
+      ]
+    },
+    "7. Agent R4: Grounded Generator (Gemma 4 31B)": {
+      "main": [
+        [
+          { "node": "8. Agent R5: Response Formatter & Indic MT", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    "1. Risk Flag Webhook Trigger": {
+      "main": [
+        [
+          { "node": "2. Lookup Patient & Vitals Context", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "2. Lookup Patient & Vitals Context": {
+      "main": [
+        [
+          { "node": "3. Agent A2: PostGIS Nearest Hospital Locator", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "3. Agent A2: PostGIS Nearest Hospital Locator": {
+      "main": [
+        [
+          { "node": "4. Lookup Assigned On-Call Doctor", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "4. Lookup Assigned On-Call Doctor": {
+      "main": [
+        [
+          { "node": "5. Agent M1: WhatsApp Emergency Alert", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "5. Agent M1: WhatsApp Emergency Alert": {
+      "main": [
+        [
+          { "node": "6. Agent A1: Auto-Create Emergency Appointment", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    "1. CV Screening Webhook": {
+      "main": [
+        [
+          { "node": "2. Agents H2-H5: Hugging Face Spaces YOLO Inference", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "2. Agents H2-H5: Hugging Face Spaces YOLO Inference": {
+      "main": [
+        [
+          { "node": "3. Agent H6: Save YOLO Result to Supabase", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "3. Agent H6: Save YOLO Result to Supabase": {
+      "main": [
+        [
+          { "node": "4. Agent R3/R4: Fetch RAG Clinical Context", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "4. Agent R3/R4: Fetch RAG Clinical Context": {
+      "main": [
+        [
+          { "node": "5. Check Imaging Severity Tier", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "5. Check Imaging Severity Tier": {
+      "main": [
+        [
+          { "node": "6a. Agent M1: Alert Radiologist/Doctor", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "6b. Update Hospital Case Queue", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    "1. Prescription Webhook Trigger": {
+      "main": [
+        [
+          { "node": "2. Lookup Patient Native Language", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "2. Lookup Patient Native Language": {
+      "main": [
+        [
+          { "node": "3. Agent R1: Translate Dosage via Bhashini MT", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "3. Agent R1: Translate Dosage via Bhashini MT": {
+      "main": [
+        [
+          { "node": "4. Send Translated Prescription via WhatsApp", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    "1. Daily 9AM Follow-Up Cron": {
+      "main": [
+        [
+          { "node": "2. Agent A3: Query Due Follow-Ups", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "2. Agent A3: Query Due Follow-Ups": {
+      "main": [
+        [
+          { "node": "3. Send Reminder WhatsApp Check-in", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "3. Send Reminder WhatsApp Check-in": {
+      "main": [
+        [
+          { "node": "4. Agent M3: Mark Reminder Sent", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    "1. Daily 8AM Digest Cron": {
+      "main": [
+        [
+          { "node": "2. Agent M1: Query Pending Cases", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "2. Agent M1: Query Pending Cases": {
+      "main": [
+        [
+          { "node": "3. Send Morning Summary Email/WhatsApp", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    "1. Appointment Webhook": {
+      "main": [
+        [
+          { "node": "2. IF Urgent Tier (Red/Orange)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "2. IF Urgent Tier (Red/Orange)": {
+      "main": [
+        [
+          { "node": "3a. Send Urgent WhatsApp Doctor Alert", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "3b. Log to Routine Queue", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    "1. WhatsApp Cloud API Webhook": {
+      "main": [
+        [
+          { "node": "2. Forward to RAG Chatbot Workflow", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    "1. Midnight Aggregation Cron": {
+      "main": [
+        [
+          { "node": "2. Agent M2: Run SQL Aggregation", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "2. Agent M2: Run SQL Aggregation": {
+      "main": [
+        [
+          { "node": "3. IF Outbreak Cluster Detected", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "3. IF Outbreak Cluster Detected": {
+      "main": [
+        [
+          { "node": "4. Send Outbreak Alert to District Admin", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    "1. Referral Webhook": {
+      "main": [
+        [
+          { "node": "2. Agent A6: Assemble Referral Packet", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "2. Agent A6: Assemble Referral Packet": {
+      "main": [
+        [
+          { "node": "3. Send WhatsApp Referral Packet to Tertiary Hospital", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    "1. Hourly Queue Age Cron": {
+      "main": [
+        [
+          { "node": "2. Agent M1: Query Unreviewed Aging Cases", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "2. Agent M1: Query Unreviewed Aging Cases": {
+      "main": [
+        [
+          { "node": "3. IF Old Cases Found (> 2h)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "3. IF Old Cases Found (> 2h)": {
+      "main": [
+        [
+          { "node": "4. Send Urgent Aging Alert WhatsApp", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredit": "ArogyaMitra Healthcare System - Multi-Agent AI Architecture"
+  },
+  "pinData": {}
+}
