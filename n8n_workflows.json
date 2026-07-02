@@ -1,5 +1,5 @@
 {
-  "name": "ArogyaMitra — Complete Multi-Agent AI Orchestration Pipeline",
+  "name": "Anvaya — Complete Multi-Agent AI Orchestration Pipeline",
   "nodes": [
     {
       "id": "sticky-w1",
@@ -140,7 +140,7 @@
       "position": [1420, 200],
       "parameters": {
         "promptType": "define",
-        "text": "You are ArogyaMitra, a medical RAG assistant for low-cost rural triage in India. Answer ONLY based on the retrieved context below. If context is missing, say you don't know.\n\nContext:\n{{ $json.context }}\n\nPatient Query:\n{{ $node['3. Agent R2: Query Understanding (NER & Intent)'].json.query_text }}"
+        "text": "You are Anvaya, a medical RAG assistant for low-cost rural triage in India. Answer ONLY based on the retrieved context below. If context is missing, say you don't know.\n\nContext:\n{{ $json.context }}\n\nPatient Query:\n{{ $node['3. Agent R2: Query Understanding (NER & Intent)'].json.query_text }}"
       }
     },
     {
@@ -323,7 +323,7 @@
       "position": [320, 1020],
       "parameters": {
         "method": "POST",
-        "url": "https://{{ $env.HF_USERNAME }}-arogyamitra-cv.hf.space/api/predict",
+        "url": "https://{{ $env.HF_USERNAME }}-Anvaya-cv.hf.space/api/predict",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -585,7 +585,7 @@
             { "name": "messaging_product", "value": "whatsapp" },
             { "name": "to", "value": "={{ $json.patient_phone }}" },
             { "name": "type", "value": "text" },
-            { "name": "text", "value": "={ \"body\": \"🏥 ArogyaMitra Check-in: How are you feeling today? Reply 1 for Better, 2 for Same, 3 for Worse.\" }" }
+            { "name": "text", "value": "={ \"body\": \"🏥 Anvaya Check-in: How are you feeling today? Reply 1 for Better, 2 for Same, 3 for Worse.\" }" }
           ]
         }
       }
@@ -675,9 +675,9 @@
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "from", "value": "triage@arogyamitra.app" },
+            { "name": "from", "value": "triage@Anvaya.app" },
             { "name": "to", "value": "doctor@hospital.org" },
-            { "name": "subject", "value": "🌅 ArogyaMitra Morning Digest — Pending Cases" },
+            { "name": "subject", "value": "🌅 Anvaya Morning Digest — Pending Cases" },
             { "name": "html", "value": "<p>You have {{ $json.length }} pending cases requiring review today.</p>" }
           ]
         }
@@ -877,9 +877,9 @@
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "from", "value": "surveillance@arogyamitra.app" },
+            { "name": "from", "value": "surveillance@Anvaya.app" },
             { "name": "to", "value": "dmo@district.gov.in" },
-            { "name": "subject", "value": "🚨 ArogyaMitra Outbreak Alert: {{ $json.disease_cluster }}" },
+            { "name": "subject", "value": "🚨 Anvaya Outbreak Alert: {{ $json.disease_cluster }}" },
             { "name": "html", "value": "<p>High concentration of {{ $json.disease_cluster }} detected in {{ $json.village_name }}. Total cases: {{ $json.case_count }}</p>" }
           ]
         }
@@ -1309,7 +1309,7 @@
   },
   "staticData": null,
   "meta": {
-    "templateCredit": "ArogyaMitra Healthcare System - Multi-Agent AI Architecture"
+    "templateCredit": "Anvaya Healthcare System - Multi-Agent AI Architecture"
   },
   "pinData": {}
 }

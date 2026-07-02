@@ -1,8 +1,8 @@
-# ArogyaMitra — AI Triage Companion for Low-Bandwidth Rural Clinics
+# Anvaya — AI Triage Companion for Low-Bandwidth Rural Clinics
 
 **Maverick Hackathon 2026 — Track: Healthcare | Low-Cost Rural Triage**
 
-> *"ArogyaMitra"* (Hindi/Sanskrit: "Health Friend") is a suggested working name — swap it for your team's branding freely. Everywhere below, it refers to the system this document specifies.
+> *"Anvaya"* (Hindi/Sanskrit: "Health Friend") is a suggested working name — swap it for your team's branding freely. Everywhere below, it refers to the system this document specifies.
 
 **Official problem statement:** *Create an AI assistant for low-bandwidth clinics that processes basic vitals and symptom queries in regional languages to flag high-risk cases.*
 
@@ -47,7 +47,7 @@ The consequence isn't a lack of care — it's a lack of **prioritization**. With
 
 ## 2. Solution Summary
 
-**ArogyaMitra is an AI co-pilot for frontline health workers and rural doctors** — not a replacement for either. A health worker enters a patient's basic vitals and describes symptoms by voice or text in their own language. The system:
+**Anvaya is an AI co-pilot for frontline health workers and rural doctors** — not a replacement for either. A health worker enters a patient's basic vitals and describes symptoms by voice or text in their own language. The system:
 
 1. Scores the vitals using a **clinically-grounded triage engine** (inspired by NEWS2/MEWS/SATS-TEWS/PEWS, simplified for CHW-collectible vitals).
 2. Runs the symptom description through a **RAG-grounded multilingual assistant** that answers questions and surfaces guidance from trusted medical sources — never from the model's unverified memory.
@@ -239,7 +239,7 @@ flowchart TB
 ```mermaid
 sequenceDiagram
     actor CHW as Field Health Worker
-    participant App as ArogyaMitra App
+    participant App as Anvaya App
     participant Cache as Local Cache
     participant API as Supabase
     participant Risk as Risk Engine
@@ -542,7 +542,7 @@ This is the section that actually earns the "low-cost rural triage" claim rather
 
 ## 16. Interoperability with India's Digital Health Stack
 
-Rather than building a closed system, ArogyaMitra is designed to plug into India's existing digital-health public infrastructure:
+Rather than building a closed system, Anvaya is designed to plug into India's existing digital-health public infrastructure:
 
 - **ABHA-linked identity (optional):** patients can be identified by their Ayushman Bharat Health Account ID; the system works fully without one (offline-first inclusivity for patients without an ABHA yet), but linking one enables the record to travel with the patient across facilities.
 - **FHIR-formatted export:** patient history can be exported in FHIR format for ABDM's Health Information Exchange, consistent with how ABDM's federated, consent-based architecture expects participating systems to share records — no centralized data dump, only consent-gated exchange.

@@ -1,13 +1,13 @@
-# Triage Engine — ArogyaMitra
+# Triage Engine — Anvaya
 
 **Module Owner:** Clinical Risk-Scoring & Decision-Support System  
-**Parent Spec:** [arogyamitra.md](file:///f:/Maverick2026/arogyamitra.md) §10  
+**Parent Spec:** [Anvaya.md](file:///f:/Maverick2026/Anvaya.md) §10  
 **Backend Implementation:** [database_and_backend.md](file:///f:/Maverick2026/database_and_backend.md) (`risk_flags`, `vitals_readings`, `compute-risk-score` Edge Function)  
 **Patient-Side Integration:** [patient.md](file:///f:/Maverick2026/patient.md) (Agents 3, 9, 12)  
 **Hospital-Side Integration:** [hospital.md](file:///f:/Maverick2026/hospital.md) (Case Queue §3, Tier Override §13)  
 **Agent Pipeline:** [Agents.md](file:///f:/Maverick2026/Agents.md) (S1 Red-Flag Monitor, P3 Result Interpreter)
 
-> This document is the **single source of truth** for ArogyaMitra's clinical risk-scoring algorithm — every vital-sign band, every point allocation, every override rule, every escalation decision, how CV screening and symptom analysis feed into the triage score, and how the score drives downstream actions. If `arogyamitra.md` §10 is the "what" (summary-level), this is the "exactly how, exactly when, exactly what value."
+> This document is the **single source of truth** for Anvaya's clinical risk-scoring algorithm — every vital-sign band, every point allocation, every override rule, every escalation decision, how CV screening and symptom analysis feed into the triage score, and how the score drives downstream actions. If `Anvaya.md` §10 is the "what" (summary-level), this is the "exactly how, exactly when, exactly what value."
 
 ---
 
@@ -485,7 +485,7 @@ flowchart TD
 
 | Tier | Time-to-doctor-notification | Measured By |
 |---|---|---|
-| 🔴 Red | < 60 seconds from tier computation | `automation_events.latency_ms` — target in `arogyamitra.md` §21 |
+| 🔴 Red | < 60 seconds from tier computation | `automation_events.latency_ms` — target in `Anvaya.md` §21 |
 | 🟠 Orange | < 5 minutes | `automation_events.latency_ms` |
 | 🟡 Yellow | < 24 hours (via daily digest) | Digest delivery timestamp |
 | 🟢 Green | No forced notification | N/A |
@@ -1232,7 +1232,7 @@ These rules are hardcoded and cannot be overridden by configuration:
 ---
 
 > **Related documents:**
-> - [arogyamitra.md §10](file:///f:/Maverick2026/arogyamitra.md) — Original high-level triage specification
+> - [Anvaya.md §10](file:///f:/Maverick2026/Anvaya.md) — Original high-level triage specification
 > - [database_and_backend.md](file:///f:/Maverick2026/database_and_backend.md) — `risk_flags` table, `compute-risk-score` Edge Function, `audit_log`
 > - [patient.md](file:///f:/Maverick2026/patient.md) — Patient-side vitals entry and tier display
 > - [hospital.md](file:///f:/Maverick2026/hospital.md) — Doctor-side case queue and tier override

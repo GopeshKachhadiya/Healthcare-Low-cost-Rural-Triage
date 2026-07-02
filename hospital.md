@@ -1,11 +1,11 @@
-# Hospital Panel — ArogyaMitra
+# Hospital Panel — Anvaya
 
 **Module Owner:** Hospital / Doctor-Facing Portal  
-**Parent Spec:** [arogyamitra.md](file:///f:/Maverick2026/arogyamitra.md)  
+**Parent Spec:** [Anvaya.md](file:///f:/Maverick2026/Anvaya.md)  
 **Receives Data From:** [Patient Panel (patient.md)](file:///f:/Maverick2026/patient.md)  
 **Database:** Supabase (Postgres + pgvector + PostGIS + Storage + Realtime + Auth + Edge Functions)
 
-> This document covers **everything the Hospital Panel does** — the doctor's case queue, medical imaging AI (MRI brain tumor, X-ray analysis, cancer screening), teleconsult, e-prescriptions, area-wide dashboards, and how Supabase serves as the unified database across all project modules. Architecture diagrams live in `arogyamitra.md`; this file is purely about hospital-side functionality, agent design, CV model details, and implementation.
+> This document covers **everything the Hospital Panel does** — the doctor's case queue, medical imaging AI (MRI brain tumor, X-ray analysis, cancer screening), teleconsult, e-prescriptions, area-wide dashboards, and how Supabase serves as the unified database across all project modules. Architecture diagrams live in `Anvaya.md`; this file is purely about hospital-side functionality, agent design, CV model details, and implementation.
 
 ---
 
@@ -41,7 +41,7 @@
 
 ## 1. Panel Overview
 
-The Hospital Panel is the **doctor and medical staff-facing** interface of ArogyaMitra. Unlike the Patient Panel (which is built for low-literacy, offline-first, mobile-first use), the Hospital Panel is a **full-featured web application** designed for desktop/tablet use by qualified medical professionals.
+The Hospital Panel is the **doctor and medical staff-facing** interface of Anvaya. Unlike the Patient Panel (which is built for low-literacy, offline-first, mobile-first use), the Hospital Panel is a **full-featured web application** designed for desktop/tablet use by qualified medical professionals.
 
 ### What a Doctor Can Do
 
@@ -118,7 +118,7 @@ This is the **landing screen** for every doctor — a real-time, auto-sorted lis
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
-║  🏥 ArogyaMitra — Doctor Dashboard         Dr. Priya Sharma     ║
+║  🏥 Anvaya — Doctor Dashboard         Dr. Priya Sharma     ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║                                                                  ║
 ║  🔴 RED — Immediate (2)                                         ║
@@ -789,8 +789,8 @@ Doctor decides to refer patient to higher facility
 
 ### 14.3 Referral Notifications
 
-- **Patient:** WhatsApp/SMS — "Dr. Sharma has referred you to [Hospital Name], [Department]. Contact: [Phone]. Please bring your ArogyaMitra ID."
-- **Receiving facility:** If they're also on ArogyaMitra, the referral appears in their case queue. If not, the referral packet is sent as a PDF via WhatsApp/email.
+- **Patient:** WhatsApp/SMS — "Dr. Sharma has referred you to [Hospital Name], [Department]. Contact: [Phone]. Please bring your Anvaya ID."
+- **Receiving facility:** If they're also on Anvaya, the referral appears in their case queue. If not, the referral packet is sent as a PDF via WhatsApp/email.
 - **Nearest hospital auto-populated:** PostGIS query suggests the closest facility with the required specialty.
 
 ---
@@ -1063,7 +1063,7 @@ flowchart TB
 | **Functions** | |
 | `build_referral_packet()` | Assembles complete patient data package (§14.2 in this doc) |
 | `find_appropriate_facility()` | PostGIS query for nearest facility with required specialty/capability |
-| `send_referral()` | If destination is on ArogyaMitra → push to their queue. If not → PDF via WhatsApp/email |
+| `send_referral()` | If destination is on Anvaya → push to their queue. If not → PDF via WhatsApp/email |
 | `notify_patient()` | WhatsApp/SMS with destination facility details, contact, and instructions |
 | `track_referral()` | Logs referral status: sent → acknowledged → patient arrived → outcome |
 
@@ -1113,7 +1113,7 @@ flowchart TB
 
 ## 18. Supabase — Unified Database for All Modules
 
-Supabase serves as the **single backend** for the entire ArogyaMitra ecosystem. Here's how it's used across ALL project modules:
+Supabase serves as the **single backend** for the entire Anvaya ecosystem. Here's how it's used across ALL project modules:
 
 ### 18.1 Why Supabase for Everything
 
@@ -1154,7 +1154,7 @@ Supabase serves as the **single backend** for the entire ArogyaMitra ecosystem. 
 
 ## 19. Hospital-Side Supabase Tables & Extensions
 
-Beyond the tables defined in `arogyamitra.md` §12, the Hospital Panel needs these additional tables:
+Beyond the tables defined in `Anvaya.md` §12, the Hospital Panel needs these additional tables:
 
 ### 19.1 Additional Tables
 
@@ -1490,7 +1490,7 @@ This result is then:
 | Model uncertain (all classes < 60%) | "AI analysis is inconclusive for this scan. Manual specialist review is strongly recommended." |
 | Drug interaction detected in prescription | Alert shown with severity level → doctor can proceed (acknowledged) or change prescription |
 | Patient has no prior history | Clearly displayed: "No prior records found. This is the patient's first interaction." |
-| Referral to facility not on ArogyaMitra | Referral packet generated as PDF → sent via WhatsApp/email to receiving facility's contact |
+| Referral to facility not on Anvaya | Referral packet generated as PDF → sent via WhatsApp/email to receiving facility's contact |
 
 ### 25.3 System Edge Cases
 
@@ -1505,4 +1505,4 @@ This result is then:
 
 > **Previous document:** [patient.md](file:///f:/Maverick2026/patient.md) — covers the Patient/Consumer Panel: image upload, skin CV screening, RAG chatbot, appointment booking, and all patient-facing features.
 >
-> **Parent document:** [arogyamitra.md](file:///f:/Maverick2026/arogyamitra.md) — covers the overall system architecture, database schema, design principles, and research references.
+> **Parent document:** [Anvaya.md](file:///f:/Maverick2026/Anvaya.md) — covers the overall system architecture, database schema, design principles, and research references.

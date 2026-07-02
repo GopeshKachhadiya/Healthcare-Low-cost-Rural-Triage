@@ -1,5 +1,5 @@
 /**
- * ArogyaMitra Triage Engine
+ * Anvaya Triage Engine
  * 
  * Implements the Rural Vitals Score (RVS), single-parameter overrides,
  * pediatric/pregnancy adjustments, and combined multi-stream triage calculations.

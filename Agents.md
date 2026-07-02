@@ -1,11 +1,11 @@
-# Agents & AI Pipeline — ArogyaMitra
+# Agents & AI Pipeline — Anvaya
 
 **Multi-Agent System Specification**  
-**Parent Spec:** [arogyamitra.md](file:///f:/Maverick2026/arogyamitra.md)  
+**Parent Spec:** [Anvaya.md](file:///f:/Maverick2026/Anvaya.md)  
 **Patient-Side Agents:** [patient.md](file:///f:/Maverick2026/patient.md)  
 **Hospital-Side Agents:** [hospital.md](file:///f:/Maverick2026/hospital.md)
 
-> This document is the **single source of truth** for ArogyaMitra's entire multi-agent AI system — every agent, every trained model, every RAG pipeline, every n8n workflow, how they're trained, how they connect, what dataset powers each one, and how n8n orchestrates the whole system into a cohesive product. If you need to understand "what AI does what, and how does it all fit together," this is the file.
+> This document is the **single source of truth** for Anvaya's entire multi-agent AI system — every agent, every trained model, every RAG pipeline, every n8n workflow, how they're trained, how they connect, what dataset powers each one, and how n8n orchestrates the whole system into a cohesive product. If you need to understand "what AI does what, and how does it all fit together," this is the file.
 
 ---
 
@@ -37,7 +37,7 @@
 
 ## 1. Multi-Agent System Overview
 
-ArogyaMitra is NOT a single monolithic AI. It's a **multi-agent system** where **27 specialized agents** handle distinct tasks, communicate through standardized protocols, and are orchestrated by **n8n workflows** and **two master orchestrator agents**.
+Anvaya is NOT a single monolithic AI. It's a **multi-agent system** where **27 specialized agents** handle distinct tasks, communicate through standardized protocols, and are orchestrated by **n8n workflows** and **two master orchestrator agents**.
 
 ### 1.1 Why Multi-Agent?
 
@@ -589,7 +589,7 @@ User query (voice or text, any language)
     │
     ▼
 ┌─────────────────────────────────────────────────┐
-│  n8n Workflow: "ArogyaMitra RAG Chatbot"         │
+│  n8n Workflow: "Anvaya RAG Chatbot"         │
 │                                                   │
 │  Node 1: Webhook Trigger                         │
 │  ← receives query from app/WhatsApp              │
@@ -638,7 +638,7 @@ User query (voice or text, any language)
 ### 8.3 System Prompt for RAG Generator (R4)
 
 ```
-You are ArogyaMitra, a medical information assistant for rural healthcare 
+You are Anvaya, a medical information assistant for rural healthcare 
 in India. You MUST follow these rules WITHOUT EXCEPTION:
 
 1. GROUNDING: Answer ONLY based on the reference passages provided below. 
@@ -814,7 +814,7 @@ results = model.train(
     lrf=0.01,                    # Final learning rate (cosine decay)
     augment=True,                # Built-in YOLO augmentation (mosaic, mixup, hsv, flip, etc.)
     pretrained=True,             # Use COCO pretrained weights as starting point
-    project='arogyamitra',
+    project='Anvaya',
     name='skin_screener_v1'
 )
 
@@ -825,8 +825,8 @@ print(f"mAP50: {metrics.box.map50}" if hasattr(metrics, 'box') else "")
 
 # ─── Step 6: Export as .pt file ───
 # The trained model is automatically saved as:
-#   arogyamitra/skin_screener_v1/weights/best.pt
-best_model_path = 'arogyamitra/skin_screener_v1/weights/best.pt'
+#   Anvaya/skin_screener_v1/weights/best.pt
+best_model_path = 'Anvaya/skin_screener_v1/weights/best.pt'
 print(f"Model saved to: {best_model_path}")
 
 # ─── Step 7: Test inference ───
@@ -1296,7 +1296,7 @@ demo = gr.Interface(
     fn=predict,
     inputs=gr.Image(type="pil"),
     outputs=gr.Textbox(label="YOLO Results (JSON)"),
-    title="ArogyaMitra CV Model",
+    title="Anvaya CV Model",
     description="Upload a medical image for AI screening"
 )
 
@@ -1346,8 +1346,8 @@ n8n HTTP Request Node:
   "base_url": "https://openrouter.ai/api/v1",
   "api_key": "sk-or-v1-xxxxx",
   "headers": {
-    "HTTP-Referer": "https://arogyamitra.app",
-    "X-Title": "ArogyaMitra"
+    "HTTP-Referer": "https://Anvaya.app",
+    "X-Title": "Anvaya"
   }
 }
 ```
@@ -1417,6 +1417,6 @@ In n8n, configure as an OpenAI-compatible credential:
 ---
 
 > **Related documents:**
-> - [arogyamitra.md](file:///f:/Maverick2026/arogyamitra.md) — System architecture, database schema, design principles
+> - [Anvaya.md](file:///f:/Maverick2026/Anvaya.md) — System architecture, database schema, design principles
 > - [patient.md](file:///f:/Maverick2026/patient.md) — Patient Panel features and patient-side agent details
 > - [hospital.md](file:///f:/Maverick2026/hospital.md) — Hospital Panel features, medical imaging, and hospital-side agent details

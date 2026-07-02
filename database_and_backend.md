@@ -1,9 +1,9 @@
-# Database & Backend — ArogyaMitra
+# Database & Backend — Anvaya
 
 **Module Owner:** Database & Backend Infrastructure (Supabase)
-**Parent Spec:** [arogyamitra.md](file:///f:/Maverick2026/arogyamitra.md)
+**Parent Spec:** [Anvaya.md](file:///f:/Maverick2026/Anvaya.md)
 **Consumed By:** [patient.md](file:///f:/Maverick2026/patient.md) · [hospital.md](file:///f:/Maverick2026/hospital.md) · [Agents.md](file:///f:/Maverick2026/Agents.md)
-**Supersedes:** arogyamitra.md §12 ("Database Schema") and hospital.md §18–19 ("Supabase — Unified Database", "Hospital-Side Supabase Tables") — both remain in place as historical/introductory context, but this document is the single canonical schema going forward. Where they disagree with this file, this file wins.
+**Supersedes:** Anvaya.md §12 ("Database Schema") and hospital.md §18–19 ("Supabase — Unified Database", "Hospital-Side Supabase Tables") — both remain in place as historical/introductory context, but this document is the single canonical schema going forward. Where they disagree with this file, this file wins.
 
 > Every other document in this project describes **what a feature does**. This document describes **what it's built on** — every table, extension, storage bucket, Realtime channel, Edge Function, and access-control rule in the Supabase backend, plus an explicit map of exactly which agent, in which document, reads or writes each one. If you're editing `patient.md`, `hospital.md`, or `Agents.md` and touch anything data-related, this is the file to update in lockstep — see §18.
 
@@ -36,12 +36,12 @@
 
 ## 0. Document Purpose & Relationship Map
 
-ArogyaMitra is specified across five documents. Four describe product behavior; this one describes the data layer all four actually run on.
+Anvaya is specified across five documents. Four describe product behavior; this one describes the data layer all four actually run on.
 
 ```mermaid
 flowchart LR
     subgraph DOCS["Specification Documents"]
-        AM["arogyamitra.md<br/>Master spec, principles,<br/>triage logic, original schema sketch"]
+        AM["Anvaya.md<br/>Master spec, principles,<br/>triage logic, original schema sketch"]
         PM["patient.md<br/>Patient Panel — 14 agents<br/>(P0–P13)"]
         HM["hospital.md<br/>Hospital Panel — 14 agents<br/>(H0–H13)"]
         AG["Agents.md<br/>Full 27-agent registry,<br/>n8n workflows, model training"]
@@ -59,12 +59,12 @@ flowchart LR
 
 | If you're reading... | ...and you hit a table name, Supabase feature, or "writes to X" | Come here for |
 |---|---|---|
-| `arogyamitra.md` §7.7, §12, §17 | Original schema sketch and security principles | The current, extended version of the same schema — §3, §7 |
+| `Anvaya.md` §7.7, §12, §17 | Original schema sketch and security principles | The current, extended version of the same schema — §3, §7 |
 | `patient.md` §10–§12 (agent specs) | "`log_screening()` writes to `cv_screenings`" etc. | Full column list, RLS rule, and who else reads that table — §3, §12 |
 | `hospital.md` §18–§19 | "Supabase Usage by Module" table, additional tables | The merged, non-duplicated version of both — §3, §4, §12 |
 | `Agents.md` §2, §14–§17 | Agent registry, n8n workflow specs, model deployment map | Edge Function catalog, `model_registry`, `automation_events` — §9, §4 |
 
-A companion hackathon-pitch document (`ArogyaMitra-Rural-Triage-AI-Architecture.md`) also sketches a schema for judge-facing purposes — that one is intentionally simplified for a 3-minute demo narrative and is **not** in scope for this document's "keep in sync" rules (§18); this file and the four project docs above are the working spec.
+A companion hackathon-pitch document (`Anvaya-Rural-Triage-AI-Architecture.md`) also sketches a schema for judge-facing purposes — that one is intentionally simplified for a 3-minute demo narrative and is **not** in scope for this document's "keep in sync" rules (§18); this file and the four project docs above are the working spec.
 
 ---
 
@@ -89,7 +89,7 @@ Everything runs on **one Supabase project** — deliberately, so a hackathon tea
 
 ## 2. Entity Relationship Diagram
 
-All 21 tables (17 already defined across `arogyamitra.md`/`hospital.md`, 4 new — see §4), with every foreign-key relationship in the system:
+All 21 tables (17 already defined across `Anvaya.md`/`hospital.md`, 4 new — see §4), with every foreign-key relationship in the system:
 
 ```mermaid
 erDiagram
@@ -140,7 +140,7 @@ erDiagram
 
 ## 3. Complete Schema Reference (DDL)
 
-This is the full, run-as-one-script schema: the 12 tables from `arogyamitra.md` §12, the 5 added in `hospital.md` §19.1, and the 4 introduced here (§4), merged with no duplication. Comments mark which document each block originated in.
+This is the full, run-as-one-script schema: the 12 tables from `Anvaya.md` §12, the 5 added in `hospital.md` §19.1, and the 4 introduced here (§4), merged with no duplication. Comments mark which document each block originated in.
 
 ```sql
 -- ════════════════════════════════════════════════════════════════
@@ -150,7 +150,7 @@ create extension if not exists vector;    -- pgvector, for RAG embeddings
 create extension if not exists postgis;   -- geospatial, for facility lookup
 
 -- ════════════════════════════════════════════════════════════════
--- Core tables — originally specified in arogyamitra.md §12
+-- Core tables — originally specified in Anvaya.md §12
 -- ════════════════════════════════════════════════════════════════
 
 create table facilities (
@@ -173,7 +173,7 @@ create table health_workers (
 
 create table patients (
   id uuid primary key default gen_random_uuid(),
-  abha_id text unique,                          -- optional ABDM linkage, arogyamitra.md §16
+  abha_id text unique,                          -- optional ABDM linkage, Anvaya.md §16
   auth_user_id uuid references auth.users(id),  -- NEW, nullable — see §4.2
   full_name text,
   dob date,
@@ -246,7 +246,7 @@ create table prescriptions (
   patient_id uuid references patients(id),
   doctor_id uuid references health_workers(id),
   medicines jsonb,
-  ayush_recommendation jsonb,    -- optional, NAMASTE-coded, arogyamitra.md §7.12
+  ayush_recommendation jsonb,    -- optional, NAMASTE-coded, Anvaya.md §7.12
   notes text,
   follow_up_days int,            -- referenced by follow_ups, §4.1
   issued_at timestamptz default now()
@@ -405,7 +405,7 @@ create table automation_events (
   patient_id uuid references patients(id),
   status text check (status in ('triggered','sent','failed','acknowledged')),
   channel text,                     -- 'whatsapp' | 'sms' | 'email'
-  latency_ms int,                   -- trigger-row creation → this event; powers arogyamitra.md §21 metrics
+  latency_ms int,                   -- trigger-row creation → this event; powers Anvaya.md §21 metrics
   payload jsonb,
   created_at timestamptz default now()
 );
@@ -454,15 +454,15 @@ Consolidating four documents' worth of table definitions surfaced a few real gap
 | Table | Why it's needed | What breaks without it |
 |---|---|---|
 | **`follow_ups`** | "Regular Patient Update" is a named feature (`patient.md` §9, `hospital.md` Feature 9, `Agents.md` Agent A3 & H13), and both `patient.md` Agent 11 (`schedule_reminder()`) and `hospital.md` Agent H9 (`schedule_follow_up()`) describe scheduling one — but no table records the schedule, the channel, or the patient's reply. Without it, `hospital.md` Agent H13's `list_pending_followups()` / `display_responses()` / `flag_non_responders()` have nothing to query. |
-| **`model_registry`** | `Agents.md` §10.3 and §17 document ten trained models in detail (architecture, dataset, size, accuracy, deployment target) but that information lives only in prose — `cv_screenings.model_version` is a bare text field with nothing to join against. This table makes "which model made this call, and how accurate is it expected to be" queryable, which matters for the bias-audit and override-pattern-detection use cases both `hospital.md` §13.2 and `arogyamitra.md` §22 call for. |
-| **`automation_events`** | `Agents.md` §14 specifies 11 n8n workflows and §21 sets a target of "<60 seconds time-to-doctor-alert," but nothing in the original schema records when a workflow fired, on what, or how long it took — so that metric (also cited in `arogyamitra.md` §21) has no data source. This table is what n8n writes back to after every webhook it handles. |
+| **`model_registry`** | `Agents.md` §10.3 and §17 document ten trained models in detail (architecture, dataset, size, accuracy, deployment target) but that information lives only in prose — `cv_screenings.model_version` is a bare text field with nothing to join against. This table makes "which model made this call, and how accurate is it expected to be" queryable, which matters for the bias-audit and override-pattern-detection use cases both `hospital.md` §13.2 and `Anvaya.md` §22 call for. |
+| **`automation_events`** | `Agents.md` §14 specifies 11 n8n workflows and §21 sets a target of "<60 seconds time-to-doctor-alert," but nothing in the original schema records when a workflow fired, on what, or how long it took — so that metric (also cited in `Anvaya.md` §21) has no data source. This table is what n8n writes back to after every webhook it handles. |
 | **`audit_log`** | `patient.md` §14.2 explicitly says offline sync conflicts are "logged to an audit table," and `hospital.md` §13.2 shows a worked example of a tier-override log — but no such table exists in either document's schema section. This table is that missing sink. |
 
 ### 4.2 New fields on existing tables
 
 | Table.field | Why |
 |---|---|
-| `patients.auth_user_id` | The original `patients` table (`arogyamitra.md` §12) has no link to `auth.users`, but `patient.md` §2 describes patients authenticating directly via phone OTP in one of three registration paths. Without this column, "a patient views only their own record" can't be written as an RLS policy the way "a health worker sees only their facility" can. Nullable, because the other two registration paths (health-worker-assisted, WhatsApp bot) may never produce a patient-owned login. |
+| `patients.auth_user_id` | The original `patients` table (`Anvaya.md` §12) has no link to `auth.users`, but `patient.md` §2 describes patients authenticating directly via phone OTP in one of three registration paths. Without this column, "a patient views only their own record" can't be written as an RLS policy the way "a health worker sees only their facility" can. Nullable, because the other two registration paths (health-worker-assisted, WhatsApp bot) may never produce a patient-owned login. |
 | `consent_log.granted_by` | `patient.md` §2 says consent is granted "by the patient (or assisting health worker)" — the original table only recorded *that* consent was granted, not *who* obtained it, which matters if a consent grant is ever disputed. Nullable for the same reason as above. |
 | `prescriptions.follow_up_days` | `hospital.md` §9.2's prescription form has a "Follow-up in: [7 days]" field and §9.3 says "Follow-up scheduled: n8n creates a reminder workflow" — but the original `prescriptions` table had nowhere to store the chosen interval. Now feeds directly into `follow_ups.interval_days`. |
 
@@ -497,9 +497,9 @@ Originally specified in `hospital.md` §19.2; reproduced here as canonical and e
 | Patient (self-registered) | Phone OTP | `patients.auth_user_id = auth.users.id` *(§4.2 addition)* | none — patients aren't in `health_workers` | Own patient row only |
 | Patient (health-worker-registered or WhatsApp-bot-registered) | None — no `auth.users` row at all | `patients.auth_user_id is null` | n/a | Accessed only through the registering health worker's session, or via phone-number lookup from the WhatsApp bot's service-role Edge Function |
 
-**Why `health_workers` and `patients` use two different identity patterns:** every health worker needs an ongoing login (they return daily), so binding `health_workers.id` directly to `auth.users.id` (as `arogyamitra.md` §12 already does) is the simplest correct design. Patients are different — `patient.md` §2 explicitly supports three onboarding paths, and two of them (health-worker-assisted, WhatsApp bot) may never produce a patient who logs in directly. Forcing every patient into `auth.users` would mean creating throwaway accounts for people who will never use them. The nullable `auth_user_id` (§4.2) lets both cases coexist without weakening RLS for the patients who *do* self-register.
+**Why `health_workers` and `patients` use two different identity patterns:** every health worker needs an ongoing login (they return daily), so binding `health_workers.id` directly to `auth.users.id` (as `Anvaya.md` §12 already does) is the simplest correct design. Patients are different — `patient.md` §2 explicitly supports three onboarding paths, and two of them (health-worker-assisted, WhatsApp bot) may never produce a patient who logs in directly. Forcing every patient into `auth.users` would mean creating throwaway accounts for people who will never use them. The nullable `auth_user_id` (§4.2) lets both cases coexist without weakening RLS for the patients who *do* self-register.
 
-**Service-role usage:** the Supabase service-role key is never shipped to client code (`arogyamitra.md` §17) — it's used only inside Edge Functions (§9) and by n8n's Supabase node, both of which run server-side. This is what lets the WhatsApp bot create/update `patients` rows for people who have no `auth.users` row of their own.
+**Service-role usage:** the Supabase service-role key is never shipped to client code (`Anvaya.md` §17) — it's used only inside Edge Functions (§9) and by n8n's Supabase node, both of which run server-side. This is what lets the WhatsApp bot create/update `patients` rows for people who have no `auth.users` row of their own.
 
 ---
 
@@ -509,11 +509,11 @@ Every policy across all four source documents, plus the gaps this document close
 
 | Table | Policy | Op | Rule | Source |
 |---|---|---|---|---|
-| `patients` | health workers see only their facility patients | SELECT | `facility_id` matches caller's `health_workers.facility_id` | `arogyamitra.md` §12 |
-| `patients` | doctors see their facility patients | SELECT | caller is a doctor at the same `facility_id` | `arogyamitra.md` §12 |
+| `patients` | health workers see only their facility patients | SELECT | `facility_id` matches caller's `health_workers.facility_id` | `Anvaya.md` §12 |
+| `patients` | doctors see their facility patients | SELECT | caller is a doctor at the same `facility_id` | `Anvaya.md` §12 |
 | `patients` | doctors_facility_patients | SELECT | equivalent doctor-scoped rule | `hospital.md` §2.3 |
 | `patients` | **patients see own record** | SELECT | `patients.auth_user_id = auth.uid()` | **NEW, §4.2** |
-| `risk_flags` | facility-scoped risk flag access | SELECT | patient's facility matches caller's facility | `arogyamitra.md` §12 |
+| `risk_flags` | facility-scoped risk flag access | SELECT | patient's facility matches caller's facility | `Anvaya.md` §12 |
 | `prescriptions` | only_doctors_prescribe | INSERT | caller has `role = 'doctor'` | `hospital.md` §2.3 |
 | `area_disease_stats` | admin_stats_only | SELECT | caller has `role = 'admin'` | `hospital.md` §2.3 |
 | `appointments` | facility_appointments | SELECT | `facility_id` matches caller's facility | `hospital.md` §19.1 |
@@ -559,7 +559,7 @@ using (
 | `teleconsult` | `teleconsult_sessions` | `appointment_id` | In-call UI, both portals | `hospital.md` §10 |
 | `area-dashboard` | `area_disease_stats` | `role = 'admin'` only | Admin dashboard | `hospital.md` §12.2 |
 
-Every channel follows the same pattern as `hospital.md`'s worked example: a `postgres_changes` subscription filtered server-side by facility, with a client-side branch for Red-tier events specifically (play sound, toast, bump to top of queue). New Realtime channels should filter at the database level (as above) rather than fetching broadly and filtering in JavaScript — the latter would defeat the payload-budgeting goal in `arogyamitra.md` §14.
+Every channel follows the same pattern as `hospital.md`'s worked example: a `postgres_changes` subscription filtered server-side by facility, with a client-side branch for Red-tier events specifically (play sound, toast, bump to top of queue). New Realtime channels should filter at the database level (as above) rather than fetching broadly and filtering in JavaScript — the latter would defeat the payload-budgeting goal in `Anvaya.md` §14.
 
 ---
 
@@ -569,15 +569,15 @@ The compute layer between client actions and either Postgres or n8n. Every Edge 
 
 | Function | Triggered by | Reads | Writes | Calls out to | Referenced in |
 |---|---|---|---|---|---|
-| `compute-risk-score` | New row in `vitals_readings` or `symptom_queries` | `vitals_readings`, `symptom_queries` | `risk_flags` | n8n Red-Flag Escalation workflow if tier ∈ {orange, red} | `arogyamitra.md` §10, §12 ("Edge Functions — risk scoring trigger"); `patient.md` Agent 3 `check_auto_escalation()`, Agent 12 |
+| `compute-risk-score` | New row in `vitals_readings` or `symptom_queries` | `vitals_readings`, `symptom_queries` | `risk_flags` | n8n Red-Flag Escalation workflow if tier ∈ {orange, red} | `Anvaya.md` §10, §12 ("Edge Functions — risk scoring trigger"); `patient.md` Agent 3 `check_auto_escalation()`, Agent 12 |
 | `process-cv-result` | New row in `cv_screenings` | `cv_screenings`, `model_registry` | `risk_flags` (raises tier if needed), `appointments` (if auto-escalated) | n8n CV Result Processing workflow | `patient.md` Agent 3 `log_screening()`; `hospital.md` Agent H6; `Agents.md` Workflow 3 |
 | `rag-retrieve` | Chat query from either portal, or n8n RAG workflow | `rag_documents` via pgvector similarity | — (returns passages) | Reranker, then the grounded LLM | `Agents.md` R3; `patient.md` Agent 6; `hospital.md` Agent H7 |
 | `consent-gate` | Called before any sensitive read/write | `consent_log` | `consent_log` (new grant) | — | `patient.md` Agent 13 `check_consent()`; `Agents.md` S2 |
 | `nearest-facility` | Hospital Locator UI action | `facilities` (PostGIS query, §11) | — | — | `patient.md` Agent 10; `Agents.md` A2 |
-| `fhir-export` | Doctor or patient requests ABDM sync | `patients`, `patient_history`, `prescriptions`, `cv_screenings` | — | ABDM Health Information Exchange | `arogyamitra.md` §16 |
-| `webhook-dispatch` | Called by any of the above on a tier change, new appointment, new prescription, or new referral | Relevant row from `risk_flags` / `appointments` / `prescriptions` / `referrals` | `automation_events` (logs the outcome) | n8n | `Agents.md` §14 (all 11 workflows); `arogyamitra.md` §13 |
+| `fhir-export` | Doctor or patient requests ABDM sync | `patients`, `patient_history`, `prescriptions`, `cv_screenings` | — | ABDM Health Information Exchange | `Anvaya.md` §16 |
+| `webhook-dispatch` | Called by any of the above on a tier change, new appointment, new prescription, or new referral | Relevant row from `risk_flags` / `appointments` / `prescriptions` / `referrals` | `automation_events` (logs the outcome) | n8n | `Agents.md` §14 (all 11 workflows); `Anvaya.md` §13 |
 
-`webhook-dispatch` is the one function every n8n-triggering event in the system ultimately calls — it's what turns "a Postgres row changed" into "n8n knows about it," and its writes to `automation_events` are what make the `arogyamitra.md` §21 "time-to-escalation" metric computable after the fact instead of only observable live.
+`webhook-dispatch` is the one function every n8n-triggering event in the system ultimately calls — it's what turns "a Postgres row changed" into "n8n knows about it," and its writes to `automation_events` are what make the `Anvaya.md` §21 "time-to-escalation" metric computable after the fact instead of only observable live.
 
 ---
 
@@ -585,11 +585,11 @@ The compute layer between client actions and either Postgres or n8n. Every Edge 
 
 | Setting | Value | Rationale |
 |---|---|---|
-| Embedding column | `rag_documents.embedding vector(768)` | Matches a 768-dim multilingual sentence-embedding model, per `arogyamitra.md` §11.1 / `Agents.md` R3 |
-| Embedding model | Multilingual sentence-transformer (e.g. `paraphrase-multilingual-MiniLM-L12-v2` class) | Lets Hindi/regional-language queries match English-language source guidelines without a mandatory translation hop first — `arogyamitra.md` §11.1 |
+| Embedding column | `rag_documents.embedding vector(768)` | Matches a 768-dim multilingual sentence-embedding model, per `Anvaya.md` §11.1 / `Agents.md` R3 |
+| Embedding model | Multilingual sentence-transformer (e.g. `paraphrase-multilingual-MiniLM-L12-v2` class) | Lets Hindi/regional-language queries match English-language source guidelines without a mandatory translation hop first — `Anvaya.md` §11.1 |
 | Similarity metric | Cosine similarity | Standard for sentence-embedding retrieval |
 | Initial retrieval | Top-20 candidates | `Agents.md` R3 |
-| Reranking | Cross-encoder rescoring to top-5 | `Agents.md` R3, `arogyamitra.md` §11.1 |
+| Reranking | Cross-encoder rescoring to top-5 | `Agents.md` R3, `Anvaya.md` §11.1 |
 | Index type | `ivfflat` (or `hnsw` if the corpus grows past a few hundred thousand chunks) | Standard pgvector indexing choice for this corpus size (`Agents.md` §9.2 estimates ~2,450 chunks total) |
 | Filtering | `language_code`, and intent-based boosting (drug formulary vs. WHO guideline) applied post-retrieval | `patient.md` Agent 6 `filter_by_intent()` |
 
@@ -635,7 +635,7 @@ The `<->` operator is a KNN (k-nearest-neighbor) distance operator, which lets P
 create index facilities_location_idx on facilities using gist (location);
 ```
 
-`patient.md` Agent 10's `geocode_village()` (resolving a village name to coordinates for offline use, via a pre-seeded lookup) is a separate, small local table/JSON asset shipped with the client — it is intentionally **not** part of this backend schema, since it needs to work with zero connectivity (`arogyamitra.md` §14).
+`patient.md` Agent 10's `geocode_village()` (resolving a village name to coordinates for offline use, via a pre-seeded lookup) is a separate, small local table/JSON asset shipped with the client — it is intentionally **not** part of this backend schema, since it needs to work with zero connectivity (`Anvaya.md` §14).
 
 ---
 
@@ -645,18 +645,18 @@ The core of this document: every table, who defines it, who writes it, who reads
 
 | Table | Defined in | Written by | Read by | Key features |
 |---|---|---|---|---|
-| `facilities` | `arogyamitra.md` §12 | Onboarding/seed process | `patient.md` Agent 10; `hospital.md` Agent H10; `Agents.md` A2 | PostGIS (§11) |
-| `health_workers` | `arogyamitra.md` §12 | Registration (Supabase Auth trigger) | Every RLS policy in both panels; `hospital.md` §2 | Auth, RLS |
-| `patients` | `arogyamitra.md` §12 | `patient.md` Agent 0/13; `hospital.md` facility-side registration | Nearly every agent in both panels | RLS (§7), Auth (§6) |
-| `vitals_readings` | `arogyamitra.md` §12 | `patient.md` vitals entry flow; `hospital.md` nurse entry | `patient.md` Agent 12; `hospital.md` §3.2 queue; `compute-risk-score` | Realtime (§8) |
-| `symptom_queries` | `arogyamitra.md` §12 | `patient.md` Agent 5, via Agent 4 | `patient.md` Agent 12; `hospital.md` §11.1; `Agents.md` R2 | — |
-| `risk_flags` | `arogyamitra.md` §12 | `compute-risk-score`; `patient.md` Agent 3/12; `hospital.md` tier override §13 | `hospital.md` §3 case queue; `patient.md` Agent 9; `Agents.md` S1 | Realtime, RLS |
-| `cv_screenings` | `arogyamitra.md` §12 | `patient.md` Agent 3 `log_screening()`; `hospital.md` Agent H6 `log_screening()` | `hospital.md` §7 skin review, §4–6 imaging; patient history timeline | Storage, Realtime, `model_registry` FK |
-| `prescriptions` | `arogyamitra.md` §12 | `hospital.md` Agent H9 — doctors only | `patient.md` §6.3 prescription view; `patient.md` Agent 9 | RLS `only_doctors_prescribe` |
-| `patient_history` | `arogyamitra.md` §12 | Nearly every write-agent in both panels | `patient.md` §6 timeline; `hospital.md` §11 history view | — |
-| `area_disease_stats` | `arogyamitra.md` §12 | `Agents.md` M2 / `hospital.md` H12, via n8n cron | `hospital.md` §12 area dashboard; admin RLS | k-anonymity suppression |
-| `rag_documents` | `arogyamitra.md` §12 | One-time n8n ingestion (`Agents.md` §9.3) | `patient.md` Agent 6; `hospital.md` Agent H7; `Agents.md` R3 | pgvector (§10) |
-| `consent_log` | `arogyamitra.md` §12 | `patient.md` Agent 13 | `Agents.md` S2; `fhir-export` gate | RLS (new, §7) |
+| `facilities` | `Anvaya.md` §12 | Onboarding/seed process | `patient.md` Agent 10; `hospital.md` Agent H10; `Agents.md` A2 | PostGIS (§11) |
+| `health_workers` | `Anvaya.md` §12 | Registration (Supabase Auth trigger) | Every RLS policy in both panels; `hospital.md` §2 | Auth, RLS |
+| `patients` | `Anvaya.md` §12 | `patient.md` Agent 0/13; `hospital.md` facility-side registration | Nearly every agent in both panels | RLS (§7), Auth (§6) |
+| `vitals_readings` | `Anvaya.md` §12 | `patient.md` vitals entry flow; `hospital.md` nurse entry | `patient.md` Agent 12; `hospital.md` §3.2 queue; `compute-risk-score` | Realtime (§8) |
+| `symptom_queries` | `Anvaya.md` §12 | `patient.md` Agent 5, via Agent 4 | `patient.md` Agent 12; `hospital.md` §11.1; `Agents.md` R2 | — |
+| `risk_flags` | `Anvaya.md` §12 | `compute-risk-score`; `patient.md` Agent 3/12; `hospital.md` tier override §13 | `hospital.md` §3 case queue; `patient.md` Agent 9; `Agents.md` S1 | Realtime, RLS |
+| `cv_screenings` | `Anvaya.md` §12 | `patient.md` Agent 3 `log_screening()`; `hospital.md` Agent H6 `log_screening()` | `hospital.md` §7 skin review, §4–6 imaging; patient history timeline | Storage, Realtime, `model_registry` FK |
+| `prescriptions` | `Anvaya.md` §12 | `hospital.md` Agent H9 — doctors only | `patient.md` §6.3 prescription view; `patient.md` Agent 9 | RLS `only_doctors_prescribe` |
+| `patient_history` | `Anvaya.md` §12 | Nearly every write-agent in both panels | `patient.md` §6 timeline; `hospital.md` §11 history view | — |
+| `area_disease_stats` | `Anvaya.md` §12 | `Agents.md` M2 / `hospital.md` H12, via n8n cron | `hospital.md` §12 area dashboard; admin RLS | k-anonymity suppression |
+| `rag_documents` | `Anvaya.md` §12 | One-time n8n ingestion (`Agents.md` §9.3) | `patient.md` Agent 6; `hospital.md` Agent H7; `Agents.md` R3 | pgvector (§10) |
+| `consent_log` | `Anvaya.md` §12 | `patient.md` Agent 13 | `Agents.md` S2; `fhir-export` gate | RLS (new, §7) |
 | `appointments` | `hospital.md` §19.1 | `patient.md` Agent 9 `create_appointment()` | `hospital.md` §3 queue, §22 workflows; `Agents.md` A1 | Realtime |
 | `referrals` | `hospital.md` §19.1 | `hospital.md` Agent H10 | `patient.md` §16.3 (referral info shown to patient) | Storage (`referral-packets`) |
 | `teleconsult_sessions` | `hospital.md` §19.1 | `hospital.md` §10 teleconsult flow | `hospital.md` §11 history; patient history (summary only) | Realtime |
@@ -664,7 +664,7 @@ The core of this document: every table, who defines it, who writes it, who reads
 | `imaging_reports` | `hospital.md` §19.1 | `hospital.md` Agent H6 `generate_report()` | `hospital.md` §4 imaging display; attached to `referrals` | RLS `doctors_create_reports` |
 | `follow_ups` | **this document, §4.1** | `patient.md` Agent 11; `hospital.md` Agent H9/H13 | `patient.md` §9; `hospital.md` Feature 9; `Agents.md` A3/H13 | n8n scheduled workflows |
 | `model_registry` | **this document, §4.1** | Deployment pipeline (`Agents.md` §18 Kaggle → HF Spaces/on-device) | Every CV agent's `load_model()`; `cv_screenings.model_version` | Service-role only |
-| `automation_events` | **this document, §4.1** | `webhook-dispatch`, on every n8n trigger | `Agents.md` §21 benchmarks; `arogyamitra.md` §21 impact metrics | Service-role only |
+| `automation_events` | **this document, §4.1** | `webhook-dispatch`, on every n8n trigger | `Agents.md` §21 benchmarks; `Anvaya.md` §21 impact metrics | Service-role only |
 | `audit_log` | **this document, §4.1** | Sync conflicts (`patient.md` §14.2); overrides (`hospital.md` §13.2) | Compliance/security review, admin RLS | — |
 
 ---
@@ -688,8 +688,8 @@ The core of this document: every table, who defines it, who writes it, who reads
 - **Exact pointers:** §8.2's RAG n8n flow node 6 ("Supabase Vector Store Retrieval") maps to `rag-retrieve` (§9); §9.3's ingestion workflow writes to `rag_documents` (§3); §17's "Model Serving & Deployment" table is now the seed data for `model_registry` (§4.1); §15.2's wiring table is the agent-centric view of the same connections this document presents table-centrically in §12.
 - **If you add a new agent that persists data:** add a row to §12 of this document, and if it introduces a new n8n workflow, add a corresponding entry to §9's Edge Functions catalog (most new workflows will route through `webhook-dispatch` rather than needing a bespoke function).
 
-### `arogyamitra.md` ↔ this document
-- This document formally supersedes `arogyamitra.md` §12 — that section should now be read as the original design sketch, this file as the maintained, current schema.
+### `Anvaya.md` ↔ this document
+- This document formally supersedes `Anvaya.md` §12 — that section should now be read as the original design sketch, this file as the maintained, current schema.
 - §17 (Security & Privacy) principles are carried forward and made concrete in §6/§7 here.
 - §21 (Impact Metrics) — "time-to-escalation" and "red-flag recall" are now directly queryable via `automation_events` and `model_registry` respectively, rather than requiring manual instrumentation.
 - §16 (ABDM interoperability) — the `fhir-export` Edge Function (§9) is the concrete implementation of what §16 describes at the architecture level.
@@ -746,12 +746,12 @@ Every arrow in this diagram corresponds to a Realtime channel (§8), an Edge Fun
 
 ## 15. Offline Sync & Conflict Resolution
 
-`patient.md` §14 and `arogyamitra.md` §14 both describe offline-first behavior at the product level; this section is the backend-side counterpart.
+`patient.md` §14 and `Anvaya.md` §14 both describe offline-first behavior at the product level; this section is the backend-side counterpart.
 
-- **Local queue:** the PWA writes to IndexedDB first, always — Supabase is a sync target, never the thing blocking a save. This is unchanged from `arogyamitra.md` §14 and isn't a backend-schema concern, but it's why every syncable table (`vitals_readings`, `symptom_queries`, `cv_screenings`, `appointments`) either already has or should have a `synced_at timestamptz` column (present on `vitals_readings` today; recommend adding to `symptom_queries` and `cv_screenings` if offline CV screening logging is implemented in full).
+- **Local queue:** the PWA writes to IndexedDB first, always — Supabase is a sync target, never the thing blocking a save. This is unchanged from `Anvaya.md` §14 and isn't a backend-schema concern, but it's why every syncable table (`vitals_readings`, `symptom_queries`, `cv_screenings`, `appointments`) either already has or should have a `synced_at timestamptz` column (present on `vitals_readings` today; recommend adding to `symptom_queries` and `cv_screenings` if offline CV screening logging is implemented in full).
 - **Delta sync:** only changed fields sync, not full rows — this is a client-side batching concern, not a schema concern, but it's why `updated_at`-style columns matter less here than `created_at`/`recorded_at`, since most tables in this schema are append-only event logs rather than mutable records.
 - **Conflict resolution:** last-write-wins at the field level, logged to `audit_log` (§3, §4.1) with `action = 'conflict_resolved'` — this is the concrete home for what `patient.md` §14.2 calls "logged to an audit table" without previously specifying where.
-- **Priority sync queue:** Red/Orange `risk_flags` rows sync first on reconnect (`arogyamitra.md` §14) — this is a client-side ordering decision using the same `tier` column already in the schema, no backend change required.
+- **Priority sync queue:** Red/Orange `risk_flags` rows sync first on reconnect (`Anvaya.md` §14) — this is a client-side ordering decision using the same `tier` column already in the schema, no backend change required.
 
 ---
 
@@ -776,10 +776,10 @@ Worth re-checking against current Supabase pricing before a real (non-hackathon)
 
 Not covered elsewhere in the four source documents, and worth specifying since a real team will run this schema through multiple iterations:
 
-- **Numbered migration files**, one per logical change, e.g. `0001_core_schema.sql` (the `arogyamitra.md` §12 tables), `0002_hospital_tables.sql` (the `hospital.md` §19.1 tables), `0003_backend_doc_additions.sql` (§3/§4 of this document — `follow_ups`, `model_registry`, `automation_events`, `audit_log`, plus the `patients.auth_user_id` / `consent_log.granted_by` / `prescriptions.follow_up_days` additions).
+- **Numbered migration files**, one per logical change, e.g. `0001_core_schema.sql` (the `Anvaya.md` §12 tables), `0002_hospital_tables.sql` (the `hospital.md` §19.1 tables), `0003_backend_doc_additions.sql` (§3/§4 of this document — `follow_ups`, `model_registry`, `automation_events`, `audit_log`, plus the `patients.auth_user_id` / `consent_log.granted_by` / `prescriptions.follow_up_days` additions).
 - **Supabase CLI** (`supabase migration new <name>`, `supabase db push`) is the natural tool for this — keeps schema changes reviewable in pull requests rather than applied ad hoc through the dashboard.
 - **Never edit a migration that's already been applied to a shared environment** — add a new one that alters the existing table instead, even for a hackathon-speed build, since two teammates working against a drifted local schema is a fast way to lose a day of a 48-hour sprint to debugging.
-- **Seed data** (sample `facilities`, a demo `health_workers` account per role, ~20–30 pages of `rag_documents` per `arogyamitra.md` §19 Sprint 2) belongs in a separate `seed.sql`, not in the migrations, so the migration history stays a clean record of schema shape rather than a mix of shape and data.
+- **Seed data** (sample `facilities`, a demo `health_workers` account per role, ~20–30 pages of `rag_documents` per `Anvaya.md` §19 Sprint 2) belongs in a separate `seed.sql`, not in the migrations, so the migration history stays a clean record of schema shape rather than a mix of shape and data.
 
 ---
 
@@ -791,7 +791,7 @@ Practical process notes for a team maintaining five interlocking documents:
 2. **Every new agent in `Agents.md` that reads or writes data needs a row in §12 of this document.** The registry in `Agents.md` §2.1 and the connectivity matrix here should never drift apart — if an agent's "Trained Model?" or function list implies a table touch, this document needs to reflect it.
 3. **Every new n8n workflow in `Agents.md` §14 should route through `webhook-dispatch` (§9) unless it has a genuinely distinct trigger shape** — this keeps `automation_events` a complete log of automation activity rather than a partial one.
 4. **RLS changes are the highest-risk edits in this whole project** — a missing or overly-permissive policy is a PHI leak, not just a bug. Any PR touching §7 should get a second reviewer, full stop, even during a hackathon.
-5. **If `arogyamitra.md` §12 or `hospital.md` §18–19 are ever edited directly,** add a note there pointing back to this document, rather than letting three schema descriptions drift out of sync silently.
+5. **If `Anvaya.md` §12 or `hospital.md` §18–19 are ever edited directly,** add a note there pointing back to this document, rather than letting three schema descriptions drift out of sync silently.
 
 ---
 
@@ -816,4 +816,4 @@ create extension if not exists vector;
 
 ---
 
-*Document prepared as the canonical backend reference for the ArogyaMitra hackathon build. As with the other documents in this set, treat table names, RLS rules, and resource budgets as a strong starting point for your team to implement and adjust — not as a locked contract.*
+*Document prepared as the canonical backend reference for the Anvaya hackathon build. As with the other documents in this set, treat table names, RLS rules, and resource budgets as a strong starting point for your team to implement and adjust — not as a locked contract.*
