@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
-import { Globe, LogOut, Activity, LayoutDashboard, Users, Map } from "lucide-react";
+import { Globe, LogOut, Activity, LayoutDashboard, Users, Map, Eye } from "lucide-react";
 import { useSession } from "../../hooks/useSession";
 
 const PATIENT_LINKS = [
@@ -12,6 +12,7 @@ const STAFF_LINKS = [
   { to: "/hospital", label: "Triage Queue", icon: LayoutDashboard },
   { to: "/hospital?tab=patients", label: "Patients", icon: Users },
   { to: "/hospital?tab=map", label: "Disease Map", icon: Map },
+  { to: "/hospital/imaging", label: "Imaging Suite", icon: Eye },
 ];
 
 export default function Navbar() {

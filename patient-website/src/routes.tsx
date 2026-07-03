@@ -9,6 +9,7 @@ import HospitalMap from "./pages/HospitalMap";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import HospitalDashboard from "./pages/hospital/HospitalDashboard";
+import HospitalImaging from "./pages/hospital/HospitalImaging";
 
 export interface RouteItem {
   path: string;
@@ -27,4 +28,5 @@ export const routesConfig: RouteItem[] = [
   { path: "/profile", element: <Profile /> },
   { path: "/login", element: <Login /> },
   { path: "/hospital", element: <HospitalDashboard /> },
+  { path: "/hospital/imaging", element: <HospitalImaging /> },
 ];

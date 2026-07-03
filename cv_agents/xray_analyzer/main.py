@@ -20,20 +20,41 @@ app.add_middleware(
 try:
     import torchxrayvision as xrv
     import skimage
-    print("Loading torchxrayvision model...")
-    # Use the densenet121-res224-all model which is trained on multiple datasets
-    model = xrv.models.DenseNet(weights="densenet121-res224-all")
+    import os
+    print("Loading local torchxrayvision model...")
+    
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(current_dir, "densenet121-res224-all.pt")
+    
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Model file not found at: {model_path}")
+
+    # Load the local file with weights_only=False to bypass PyTorch 2.6 security restriction
+    loaded_data = torch.load(model_path, map_location='cpu', weights_only=False)
+    
+    if isinstance(loaded_data, dict):
+        model = xrv.models.DenseNet(weights="densenet121-res224-all")
+        model.load_state_dict(loaded_data)
+    else:
+        # The file contains the full model instance
+        model = loaded_data
+        
     model.eval()
     
     transform = transforms.Compose([
         xrv.datasets.XRayCenterCrop(),
         xrv.datasets.XRayResizer(224)
     ])
-    print("Model loaded successfully.")
+    print("Local model loaded successfully.")
     HAS_XRV = True
 except ImportError:
     print("torchxrayvision not installed. Falling back to mock implementation.")
     HAS_XRV = False
+    XRV_ERROR = "torchxrayvision not installed"
+except Exception as e:
+    print(f"Error loading local X-ray model: {e}")
+    HAS_XRV = False
+    XRV_ERROR = str(e)
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
@@ -59,7 +80,27 @@ async def predict(file: UploadFile = File(...)):
             with torch.no_grad():
                 outputs = model(img)
                 
-            predictions = dict(zip(model.pathologies, outputs[0].detach().numpy().tolist()))
+            # Generic DenseNet might output raw logits, apply softmax to get probabilities
+            if not hasattr(model, 'pathologies'):
+                import torch.nn.functional as F
+                probs = F.softmax(outputs, dim=1)[0].detach().numpy().tolist()
+                
+                num_classes = len(probs)
+                if num_classes == 18:
+                    pathologies_list = ['Atelectasis', 'Consolidation', 'Infiltration', 'Pneumothorax', 'Edema', 'Emphysema', 'Fibrosis', 'Effusion', 'Pneumonia', 'Pleural_Thickening', 'Cardiomegaly', 'Nodule', 'Mass', 'Hernia', 'Lung Lesion', 'Fracture', 'Lung Opacity', 'Enlarged Cardiomediastinum']
+                elif num_classes == 14:
+                    pathologies_list = ['Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia', 'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia']
+                elif num_classes == 3:
+                    pathologies_list = ['Normal', 'Pneumonia', 'COVID-19']
+                elif num_classes == 2:
+                    pathologies_list = ['Normal', 'Pneumonia/Abnormal']
+                else:
+                    pathologies_list = [f"Class_{i}" for i in range(num_classes)]
+            else:
+                probs = outputs[0].detach().numpy().tolist()
+                pathologies_list = model.pathologies
+                
+            predictions = dict(zip(pathologies_list, probs))
             
             # Find the top class (highest probability)
             top_class = max(predictions, key=predictions.get)
@@ -74,32 +115,9 @@ async def predict(file: UploadFile = File(...)):
                 "confidence": round(confidence, 4),
                 "status": "success"
             }
+            return JSONResponse(content=response)
         else:
-            # MOCK PREDICTION LOGIC if library is missing
-            mock_conditions = [
-                "Pneumonia", "Tuberculosis", "Cardiomegaly", 
-                "Pleural Effusion", "Lung Mass/Nodule", 
-                "Atelectasis", "Consolidation", "Normal"
-            ]
-            
-            mock_response = {
-                "predictions": {
-                    "Tuberculosis": 0.88,
-                    "Pneumonia": 0.12,
-                    "Lung Mass/Nodule": 0.10,
-                    "Pleural Effusion": 0.05,
-                    "Cardiomegaly": 0.03,
-                    "Atelectasis": 0.02,
-                    "Consolidation": 0.01,
-                    "Normal": 0.04
-                },
-                "top_class": "Tuberculosis",
-                "confidence": 0.88,
-                "status": "success (mock fallback)"
-            }
-            response = mock_response
-        
-        return JSONResponse(content=response)
+            return JSONResponse(status_code=500, content={"error": f"X-ray model failed to load during startup: {XRV_ERROR}"})
     
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
