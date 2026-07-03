@@ -1,0 +1,22 @@
+{
+  "home": {
+    "title": "ArogyaMitra",
+    "subtitle": "Your Health, in Your Language",
+    "welcome": "Welcome back",
+    "quickActions": "Quick Health Services",
+    "chat": "Ask Symptom Bot",
+    "scan": "Scan a Skin Rash / Eye",
+    "appointments": "My Consultations",
+    "history": "Health History",
+    "findClinic": "Locate Nearby PHC"
+  },
+  "chat": {
+    "title": "Ask ArogyaMitra",
+    "placeholder": "Type symptoms or medicines...",
+    "recording": "Recording translation..."
+  },
+  "scan": {
+    "title": "AI Visual Screening",
+    "select": "Upload Condition Scan"
+  }
+}
