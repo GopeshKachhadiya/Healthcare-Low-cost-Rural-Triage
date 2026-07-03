@@ -62,14 +62,35 @@ export default function Upload() {
   const [selectedCase, setSelectedCase] = useState<PresetCase | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const startAnalysis = async (c: PresetCase) => {
-    setSelectedCase(c);
-    setErrorMsg("");
-    try {
-      const newScanId = await runScreening(c.modality, c.condition);
-      navigate(`/scan/result/${newScanId}`);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Quality check failed.");
+  const startAnalysis = async (c: PresetCase | null, file?: File) => {
+    if (file) {
+      setSelectedCase({
+        name: file.name,
+        modality: modality,
+        condition: "Analyzing Custom Upload...",
+        confidence: 0.0,
+        tier: "green",
+        image: "",
+        heatmap: "",
+        explanation: "",
+        recommendation: ""
+      });
+      setErrorMsg("");
+      try {
+        const newScanId = await runScreening(modality, undefined, file);
+        navigate(`/scan/result/${newScanId}`);
+      } catch (err: any) {
+        setErrorMsg(err.message || "Quality check or API screening failed.");
+      }
+    } else if (c) {
+      setSelectedCase(c);
+      setErrorMsg("");
+      try {
+        const newScanId = await runScreening(c.modality, c.condition);
+        navigate(`/scan/result/${newScanId}`);
+      } catch (err: any) {
+        setErrorMsg(err.message || "Quality check failed.");
+      }
     }
   };
 
@@ -128,9 +149,7 @@ export default function Upload() {
             {/* Upload Zone */}
             <UploadDropzone
               onFileSelected={(file) => {
-                // Find matching preset demo case
-                const matchCase = PRESET_CASES.find((c) => c.modality === modality) || PRESET_CASES[0];
-                startAnalysis(matchCase);
+                startAnalysis(null, file);
               }}
               className="md:col-span-2"
             />

@@ -77,6 +77,28 @@ const CONDITION_REGISTRY: Record<
   },
 };
 
+function normalizeClassLabel(label: string): string {
+  const clean = label.toLowerCase().trim();
+  
+  if (clean.includes("melanoma")) return "mel";
+  if (clean.includes("basal cell") || clean.includes("bcc")) return "bcc";
+  if (clean.includes("actinic") || clean.includes("akiec")) return "akiec";
+  if (clean.includes("seborrheic") || clean.includes("benign keratosis") || clean.includes("bkl")) return "bkl";
+  if (clean.includes("dermatofibroma") || clean.includes("df")) return "df";
+  if (clean.includes("scabies") || clean.includes("lyme") || clean.includes("infestation")) return "scabies";
+  if (clean.includes("eczema") || clean.includes("dermatitis")) return "bkl"; // maps to green tier or custom
+  if (clean.includes("conjunctivitis") || clean.includes("eye")) return "conjunctivitis";
+  if (clean.includes("acne") || clean.includes("rosacea")) return "nv"; // normal / green
+  if (clean.includes("nevi") || clean.includes("nevus") || clean.includes("mole")) return "nv";
+  if (clean.includes("vascular")) return "vasc";
+  if (clean.includes("fungal") || clean.includes("tinea") || clean.includes("ringworm")) return "scabies"; // yellow
+  if (clean.includes("warts") || clean.includes("viral")) return "scabies"; // yellow
+  if (clean.includes("urticaria") || clean.includes("hives")) return "scabies"; // yellow
+  if (clean.includes("alopecia") || clean.includes("hair")) return "df"; // green / harmless
+  
+  return clean;
+}
+
 /**
  * P3 Result Interpreter Agent:
  * Translates machine-learning class labels (e.g. logits or class names) into clinical descriptions
@@ -86,7 +108,7 @@ export function interpretClassification(
   classLabel: string,
   confidence: number
 ): DiagnosticInterpretation {
-  const normalizedLabel = classLabel.toLowerCase().trim();
+  const normalizedLabel = normalizeClassLabel(classLabel);
   const entry = CONDITION_REGISTRY[normalizedLabel];
 
   if (!entry) {

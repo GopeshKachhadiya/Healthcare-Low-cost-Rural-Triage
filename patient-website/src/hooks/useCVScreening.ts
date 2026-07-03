@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useApp, Scan, Tier } from "../context/AppContext";
 import { assessImageQuality } from "../agents/P1_imagePreprocessor";
 import { interpretClassification } from "../agents/P3_resultInterpreter";
+import { uploadImageAndScreen } from "../lib/api/cvScreening";
 
 const PRESET_CASES: {
   modality: Scan["modality"];
@@ -61,8 +62,79 @@ export function useCVScreening() {
 
   const runScreening = async (
     modality: Scan["modality"],
-    selectedCaseName?: string
+    selectedCaseName?: string,
+    imageFile?: File
   ): Promise<string> => {
+    if (imageFile) {
+      setIsAnalyzing(true);
+      setCurrentStep(0);
+
+      // Create a temporary object URL to assess quality locally using P1 Preprocessor Agent
+      const tempUrl = URL.createObjectURL(imageFile);
+      try {
+        const quality = await assessImageQuality(tempUrl);
+        if (!quality.isValid) {
+          setIsAnalyzing(false);
+          URL.revokeObjectURL(tempUrl);
+          throw new Error(quality.message);
+        }
+
+        // Simulate on-device progress steps while executing the API request in parallel
+        const interval = setInterval(() => {
+          setCurrentStep((prev) => {
+            if (prev >= STEPS_TEXT.length - 2) {
+              clearInterval(interval);
+              return prev;
+            }
+            return prev + 1;
+          });
+        }, 250);
+
+        // Run actual FastAPI server request on port 8005
+        const apiResponse = await uploadImageAndScreen(imageFile, modality);
+        
+        clearInterval(interval);
+        setCurrentStep(STEPS_TEXT.length - 1);
+
+        // Decode top class string to full clinical diagnostic details using P3 Result Interpreter Agent
+        const interpretation = interpretClassification(apiResponse.condition, apiResponse.confidence);
+
+        const scanId = addScan({
+          modality: modality,
+          image: tempUrl,
+          heatmap: apiResponse.heatmapUrl,
+          condition: interpretation.conditionName,
+          confidence: interpretation.confidence,
+          tier: interpretation.tier,
+          explanation: interpretation.explanation,
+          recommendation: interpretation.recommendation,
+        });
+
+        // Auto-schedule referral appointment if it is Red or Orange tier
+        if (interpretation.tier === "red" || interpretation.tier === "orange") {
+          addAppointment({
+            doctorName:
+              interpretation.tier === "red"
+                ? "Dr. Neha Patel (Dermatology Specialist)"
+                : "Dr. Alok Sharma (PHC Medical Officer)",
+            facilityName:
+              interpretation.tier === "red"
+                ? "District Referral Hospital"
+                : "Chandpur Primary Health Centre",
+            priority: interpretation.tier,
+            reason: `AI Screening Triage: ${interpretation.conditionName}`,
+          });
+        }
+
+        setIsAnalyzing(false);
+        return scanId;
+      } catch (err: any) {
+        setIsAnalyzing(false);
+        URL.revokeObjectURL(tempUrl);
+        throw new Error(err.message || "Quality check or API screening failed.");
+      }
+    }
+
     setIsAnalyzing(true);
     setCurrentStep(0);
 
