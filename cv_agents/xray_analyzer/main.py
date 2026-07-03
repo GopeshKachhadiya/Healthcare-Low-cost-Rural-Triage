@@ -5,7 +5,17 @@ import torch
 from PIL import Image
 import torchvision.transforms as transforms
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="X-ray Analyzer API", description="Computer Vision Agent H4 for Chest X-ray Analysis")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 try:
     import torchxrayvision as xrv

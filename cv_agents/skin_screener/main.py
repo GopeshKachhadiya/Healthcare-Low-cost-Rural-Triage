@@ -6,7 +6,17 @@ from PIL import Image
 from ultralytics import YOLO
 from huggingface_hub import hf_hub_download
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="Patient CV Screener API", description="Agent P2 for Skin, Eye, and Oral Disease Screening")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 print("Downloading and loading YOLOv8 models from Hugging Face...")
 os.makedirs("models", exist_ok=True)

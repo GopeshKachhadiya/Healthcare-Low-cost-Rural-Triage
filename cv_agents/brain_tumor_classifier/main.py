@@ -6,7 +6,17 @@ from PIL import Image
 from ultralytics import YOLO
 from huggingface_hub import hf_hub_download
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="Brain Tumor Classifier API", description="Computer Vision Agent H3 for Brain Tumor Classification")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 print("Downloading and loading YOLOv8 Brain Tumor model from Hugging Face...")
 os.makedirs("models", exist_ok=True)
