@@ -21,13 +21,22 @@ app.add_middleware(
 print("Downloading and loading YOLOv8 Brain Tumor model from Hugging Face...")
 os.makedirs("models", exist_ok=True)
 
-try:
-    model_path = hf_hub_download(repo_id="david-lim/yolov8n-cls-brain-tumor", filename="best.pt", cache_dir="models")
-    model = YOLO(model_path)
-    print("Model loaded successfully.")
-except Exception as e:
-    print(f"Error loading model from Hugging Face: {e}")
-    model = None
+local_path = r"E:\Maverick2026\models\best braintrumor (9).pt"
+if os.path.exists(local_path):
+    try:
+        model = YOLO(local_path)
+        print(f"Model loaded successfully from local path: {local_path}")
+    except Exception as e:
+        print(f"Error loading local model from {local_path}: {e}")
+        model = None
+else:
+    try:
+        model_path = hf_hub_download(repo_id="david-lim/yolov8n-cls-brain-tumor", filename="best.pt", cache_dir="models")
+        model = YOLO(model_path)
+        print("Model loaded successfully from Hugging Face.")
+    except Exception as e:
+        print(f"Error loading model from Hugging Face: {e}")
+        model = None
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):

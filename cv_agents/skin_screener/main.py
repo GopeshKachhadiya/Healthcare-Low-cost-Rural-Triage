@@ -18,16 +18,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("Downloading and loading YOLOv8 models from Hugging Face...")
+print("Loading YOLOv8 models...")
 os.makedirs("models", exist_ok=True)
 
 models = {}
 
 def load_model(repo_id, key):
+    # Check for local models first
+    local_paths = {
+        "skin": r"E:\Maverick2026\models\skin deseases.pt",
+        "eye": r"E:\Maverick2026\models\skin deseases.pt",
+        "oral": r"E:\Maverick2026\models\skin deseases.pt"
+    }
+    
+    local_path = local_paths.get(key)
+    if local_path and os.path.exists(local_path):
+        try:
+            models[key] = YOLO(local_path)
+            print(f"Model {key} loaded successfully from local path: {local_path}")
+            return
+        except Exception as e:
+            print(f"Error loading local model {key} from {local_path}: {e}")
+
     try:
         path = hf_hub_download(repo_id=repo_id, filename="best.pt", cache_dir="models")
         models[key] = YOLO(path)
-        print(f"Model {key} loaded successfully.")
+        print(f"Model {key} loaded successfully from Hugging Face.")
     except Exception as e:
         print(f"Error loading {key} model from Hugging Face: {e}")
         models[key] = None
