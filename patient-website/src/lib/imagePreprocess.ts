@@ -112,7 +112,8 @@ export async function checkBlur(
     }
 
     const score = totalVariance / count;
-    const isBlurry = score < 60; // Threshold score calibrated for blurry inputs
+    // Lowered threshold to 4.0 to avoid false-positives on normal/downscaled camera images
+    const isBlurry = score < 4.0; 
     const message = isBlurry
       ? "Image is blurry. Please hold your camera steady and retake the photo."
       : "Focus level is optimal for classification.";
