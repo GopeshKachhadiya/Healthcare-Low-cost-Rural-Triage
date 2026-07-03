@@ -25,8 +25,9 @@ models = {}
 
 def load_model(repo_id, key):
     # Check for local models first
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     local_paths = {
-        "skin": r"E:\Maverick2026\models\skin deseases.pt",
+        "skin": os.path.join(BASE_DIR, "skin deseases.pt"),
         "eye": r"E:\Maverick2026\models\skin deseases.pt",
         "oral": r"E:\Maverick2026\models\skin deseases.pt"
     }
