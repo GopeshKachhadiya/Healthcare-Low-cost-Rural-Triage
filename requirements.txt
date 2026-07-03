@@ -1,0 +1,62 @@
+# ============================================================
+# ArogyaMitra / Anvaya — Unified Requirements
+# ============================================================
+# Install with: pip install -r requirements.txt
+#
+# For development/demo (no ML models):
+#   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+#
+# For production (with GPU support):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+#   pip install -r requirements.txt
+
+# ── Core web framework ────────────────────────────────────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.0.0
+
+# ── HTTP client (used by all agents for inter-agent calls) ────
+httpx>=0.27.0
+
+# ── Environment variable loading ──────────────────────────────
+python-dotenv>=1.0.0
+
+# ── Supabase Python client (backend / Edge Functions) ─────────
+supabase>=2.4.0
+
+# ── NLP / ML (only needed for specific agents) ────────────────
+# Required by: R2 (query understanding), S1 (red-flag NLP mode)
+# OPTIONAL — omit for keyword-only demo mode
+# transformers>=4.40.0
+# torch>=2.3.0
+# sentence-transformers>=2.7.0
+
+# ── Computer Vision (only needed for CV agents) ───────────────
+# Required by: P2 (skin/eye/oral screener), H2/H3/H4/H5 (hospital imaging)
+# OPTIONAL — omit for demo mode (models called via HF Spaces API)
+# ultralytics>=8.2.0
+# opencv-python-headless>=4.9.0
+# pillow>=10.3.0
+# pydicom>=2.4.0    # MRI DICOM parsing (H1)
+# nibabel>=5.2.0    # NIfTI/DICOM support (H1)
+
+# ── ASR / TTS (only needed for R1 language processor) ─────────
+# Required by: R1 (speech-to-text and text-to-speech)
+# OPTIONAL — omit for text-only demo mode (Bhashini API used instead)
+# torchaudio>=2.3.0
+
+# ── Vector store / RAG (only needed for R3 retrieval engine) ──
+# Required by: R3 (embedding queries for pgvector search)
+# OPTIONAL — omit for mock RAG demo mode
+# sentence-transformers>=2.7.0
+# langchain>=0.2.0
+# langchain-community>=0.2.0
+
+# ── Testing ───────────────────────────────────────────────────
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+httpx>=0.27.0    # also used for test client
+
+# ── Utilities ─────────────────────────────────────────────────
+python-multipart>=0.0.9    # for file uploads in FastAPI
+aiofiles>=23.2.1

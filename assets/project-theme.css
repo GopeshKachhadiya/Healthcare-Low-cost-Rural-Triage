@@ -1,0 +1,346 @@
+:root {
+  --am-bg-900: #040710;
+  --am-bg-800: #080c18;
+  --am-bg-700: #0d1222;
+  --am-bg-600: #12182c;
+  --am-bg-500: #182038;
+  --am-surface: rgba(18, 24, 44, 0.76);
+  --am-surface-2: rgba(24, 32, 56, 0.72);
+  --am-border: rgba(255, 255, 255, 0.08);
+  --am-border-strong: rgba(32, 199, 168, 0.36);
+  --am-teal: #20c7a8;
+  --am-teal-dim: #0c9f89;
+  --am-info: #3d9de8;
+  --am-red: #ff4757;
+  --am-orange: #ff6b35;
+  --am-yellow: #ffa502;
+  --am-green: #2ed573;
+  --am-text: #f0f4ff;
+  --am-text-2: #9aa5c4;
+  --am-text-3: #5a6585;
+  --am-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
+  --am-radius: 8px;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(32, 199, 168, 0.1), transparent 30rem),
+    linear-gradient(180deg, var(--am-bg-700), var(--am-bg-900)) !important;
+  color: var(--am-text);
+}
+
+body:has(.login-panel) {
+  min-height: 100dvh !important;
+  height: auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+body:has(.login-panel) .hero,
+body:has(.login-panel) .login-panel {
+  min-height: 100dvh;
+}
+
+body:has(.login-panel) .login-panel {
+  overflow: visible !important;
+}
+
+@media (max-height: 920px) and (min-width: 821px) {
+  body:has(.login-panel) .hero,
+  body:has(.login-panel) .login-panel {
+    justify-content: flex-start !important;
+  }
+}
+
+.am-svg-icon,
+.am-inline-icon {
+  width: 1.15em;
+  height: 1.15em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+  flex: 0 0 auto;
+  vertical-align: -0.18em;
+}
+
+.am-svg-icon svg,
+.am-inline-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+}
+
+.am-brand-mark {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--am-radius);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #04100d;
+  background: linear-gradient(135deg, var(--am-teal), var(--am-teal-dim));
+  box-shadow: 0 0 24px rgba(32, 199, 168, 0.28);
+}
+
+.sidebar,
+.app-header,
+.bottom-nav,
+.top-bar,
+.login-panel,
+#topbar,
+#sidebar {
+  background-color: var(--am-bg-700) !important;
+  border-color: var(--am-border) !important;
+}
+
+.dash-card,
+.stat-card,
+.action-card,
+.tip-card,
+.screen-card,
+.result-card,
+.history-item,
+.modal,
+.doctor-card,
+.imaging-upload-card,
+.imaging-result-card,
+.rx-form-card,
+.rx-history-card,
+.analytics-card,
+.queue-full-item,
+.card,
+.queue-stat,
+.case-card,
+.chart-card {
+  background: var(--am-surface) !important;
+  border-color: var(--am-border) !important;
+  border-radius: var(--am-radius) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025), var(--am-shadow);
+}
+
+.btn-primary,
+.send-btn,
+.btn-login,
+.action-chip,
+.btn.btn-primary {
+  background: linear-gradient(135deg, var(--am-teal), var(--am-teal-dim)) !important;
+  color: #04100d !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--am-radius) !important;
+  box-shadow: 0 6px 18px rgba(32, 199, 168, 0.24) !important;
+}
+
+.btn-secondary,
+.btn-ghost,
+.chip,
+.role-tabs,
+.form-input,
+.form-control,
+.chat-input-wrap,
+.chat-input-area textarea {
+  border-color: var(--am-border) !important;
+  border-radius: var(--am-radius) !important;
+}
+
+.sidebar-btn.active,
+.nav-btn.active,
+.chip.active,
+.role-tab.active {
+  color: var(--am-teal) !important;
+  border-color: var(--am-border-strong) !important;
+  background: rgba(32, 199, 168, 0.12) !important;
+}
+
+.stat-icon,
+.action-icon,
+.tip-icon,
+.screen-icon,
+.history-icon,
+.doctor-avatar,
+.chat-avatar,
+.facility-icon,
+.upload-icon,
+.empty-icon,
+.toast-icon,
+.loading-logo,
+.security-icon,
+.role-icon {
+  color: var(--am-teal);
+}
+
+.tier-dot.red,
+.dot.red,
+.text-red {
+  color: var(--am-red) !important;
+}
+
+.tier-dot.orange,
+.dot.orange,
+.text-orange {
+  color: var(--am-orange) !important;
+}
+
+.tier-dot.yellow,
+.dot.yellow,
+.text-yellow {
+  color: var(--am-yellow) !important;
+}
+
+.tier-dot.green,
+.dot.green,
+.text-green {
+  color: var(--am-green) !important;
+}
+
+.bottom-nav {
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.28);
+}
+
+.nav-btn,
+.sidebar-btn,
+.btn,
+button {
+  min-height: 36px;
+}
+
+.patient-logout-btn {
+  width: auto !important;
+  min-width: 100px !important;
+  height: 38px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 0 16px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 71, 87, 0.32) !important;
+  background: rgba(255, 71, 87, 0.08) !important;
+  color: var(--am-text) !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+.patient-logout-btn::before {
+  content: '' !important;
+  width: 15px !important;
+  height: 15px !important;
+  flex: 0 0 15px !important;
+  display: inline-block !important;
+  background: currentColor !important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/%3E%3Cpath d='m16 17 5-5-5-5'/%3E%3Cpath d='M21 12H9'/%3E%3C/svg%3E") center / contain no-repeat !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/%3E%3Cpath d='m16 17 5-5-5-5'/%3E%3Cpath d='M21 12H9'/%3E%3C/svg%3E") center / contain no-repeat !important;
+}
+
+.patient-logout-btn:hover {
+  border-color: rgba(255, 71, 87, 0.56) !important;
+  background: rgba(255, 71, 87, 0.14) !important;
+  color: var(--am-red) !important;
+}
+
+.action-card,
+.screen-card,
+.queue-full-item,
+.rx-history-item,
+.history-item {
+  min-width: 0;
+}
+
+.action-label,
+.action-sub,
+.queue-info,
+.queue-full-info,
+.history-info,
+.tip-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+  .top-bar,
+  .app-header {
+    padding-inline: 14px !important;
+  }
+
+  .topbar-actions,
+  .header-right {
+    gap: 8px !important;
+  }
+
+  .action-grid,
+  .stats-grid,
+  .dashboard-grid,
+  .imaging-grid,
+  .prescription-layout,
+  .analytics-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-hero,
+  .report-tier-row,
+  .rx-history-item,
+  .modal-actions,
+  .camera-controls {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+}
+
+@media (max-width: 820px) {
+  body:has(.login-panel) {
+    display: block !important;
+    min-height: 100dvh;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  body:has(.login-panel) .hero {
+    display: none !important;
+  }
+
+  body:has(.login-panel) .login-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 100dvh;
+    padding: 32px 20px !important;
+    border-left: 0 !important;
+  }
+
+  body:has(.login-panel) .role-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+  }
+
+  body:has(.login-panel) .role-tab {
+    min-width: 0 !important;
+    padding: 10px 6px !important;
+    font-size: 0.72rem !important;
+    overflow-wrap: anywhere;
+  }
+
+  body:has(.login-panel) .demo-logins {
+    grid-template-columns: 1fr !important;
+  }
+
+  body:has(.login-panel) .otp-row {
+    gap: 6px !important;
+  }
+
+  body:has(.login-panel) .otp-input {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .patient-logout-btn {
+    min-width: 42px !important;
+    width: 42px !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    border-radius: 50% !important;
+  }
+}

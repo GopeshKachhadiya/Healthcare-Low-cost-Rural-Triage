@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anvaya — Hospital Command Centre</title>
+  <meta name="description" content="Anvaya Hospital Panel — AI-assisted case queue, imaging analysis, prescriptions, and referral management." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="hospital.css" />
+  <link rel="stylesheet" href="../assets/project-theme.css" />
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <svg width="32" height="32" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="32" fill="url(#hg)"/><path d="M32 22 L32 42 M22 32 L42 32" stroke="white" stroke-width="3" stroke-linecap="round"/><defs><linearGradient id="hg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#1D4ED8"/><stop offset="100%" stop-color="#0EA5E9"/></linearGradient></defs></svg>
+    <div>
+      <strong>Anvaya</strong>
+      <span>Hospital Panel</span>
+    </div>
+  </div>
+
+  <div class="doctor-card">
+    <div class="doctor-avatar">👨‍⚕️</div>
+    <div>
+      <strong id="doctor-name">Dr. Sharma</strong>
+      <span id="doctor-facility">PHC Alpha</span>
+    </div>
+    <div class="online-indicator" title="Online"></div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <button class="sidebar-btn active" data-panel="dashboard" onclick="switchPanel('dashboard')">
+      <span>📊</span> Dashboard
+    </button>
+    <button class="sidebar-btn" data-panel="queue" onclick="switchPanel('queue')">
+      <span>📋</span> Case Queue
+      <span class="badge" id="queue-badge">3</span>
+    </button>
+    <button class="sidebar-btn" data-panel="imaging" onclick="switchPanel('imaging')">
+      <span>🧠</span> Imaging AI
+    </button>
+    <button class="sidebar-btn" data-panel="chat" onclick="switchPanel('chat')">
+      <span>💬</span> Medical AI
+    </button>
+    <button class="sidebar-btn" data-panel="prescriptions" onclick="switchPanel('prescriptions')">
+      <span>💊</span> Prescriptions
+    </button>
+    <button class="sidebar-btn" data-panel="referrals" onclick="switchPanel('referrals')">
+      <span>🔗</span> Referrals
+    </button>
+    <button class="sidebar-btn" data-panel="analytics" onclick="switchPanel('analytics')">
+      <span>📈</span> Analytics
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="sidebar-btn" onclick="alert('Settings coming soon')">⚙️ Settings</button>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main-wrapper">
+
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <div class="topbar-title" id="panel-title">Dashboard</div>
+    <div class="topbar-actions">
+      <div class="alert-bell" id="alert-bell" onclick="showAlerts()">
+        🔔 <span class="bell-count" id="bell-count">2</span>
+      </div>
+      <div class="time-display" id="time-display"></div>
+    </div>
+  </header>
+
+  <!-- ══ DASHBOARD PANEL ══ -->
+  <section id="panel-dashboard" class="panel active">
+    <div class="stats-grid">
+      <div class="stat-card stat-red">
+        <div class="stat-icon">🚨</div>
+        <div><div class="stat-num" id="stat-red">2</div><div class="stat-label">Red Cases</div></div>
+      </div>
+      <div class="stat-card stat-orange">
+        <div class="stat-icon">⚠️</div>
+        <div><div class="stat-num" id="stat-orange">5</div><div class="stat-label">Orange Cases</div></div>
+      </div>
+      <div class="stat-card stat-green">
+        <div class="stat-icon">✅</div>
+        <div><div class="stat-num" id="stat-green">18</div><div class="stat-label">Resolved Today</div></div>
+      </div>
+      <div class="stat-card stat-blue">
+        <div class="stat-icon">⏳</div>
+        <div><div class="stat-num" id="stat-pending">7</div><div class="stat-label">Pending Reviews</div></div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- Live Queue Preview -->
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <h3>Live Case Queue</h3>
+          <button class="link-btn" onclick="switchPanel('queue')">View All →</button>
+        </div>
+        <div id="dash-queue-preview">
+          <div class="queue-item tier-red">
+            <div class="tier-dot red"></div>
+            <div class="queue-info">
+              <strong>Ramesh Kumar</strong>
+              <p>Severe chest pain · 45 min wait</p>
+            </div>
+            <button class="action-chip" onclick="switchPanel('queue')">Review</button>
+          </div>
+          <div class="queue-item tier-orange">
+            <div class="tier-dot orange"></div>
+            <div class="queue-info">
+              <strong>Priya Devi</strong>
+              <p>Suspicious skin lesion · CV flagged</p>
+            </div>
+            <button class="action-chip" onclick="switchPanel('imaging')">Imaging</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Area Disease Map -->
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <h3>Area Disease Stats</h3>
+          <button class="link-btn" onclick="switchPanel('analytics')">Details →</button>
+        </div>
+        <div class="disease-bars" id="disease-bars">
+          <div class="disease-bar-item">
+            <span>Pneumonia</span>
+            <div class="bar-track"><div class="bar-fill" style="width:70%"></div></div>
+            <span>340</span>
+          </div>
+          <div class="disease-bar-item">
+            <span>Tuberculosis</span>
+            <div class="bar-track"><div class="bar-fill orange" style="width:35%"></div></div>
+            <span>120</span>
+          </div>
+          <div class="disease-bar-item">
+            <span>Malaria</span>
+            <div class="bar-track"><div class="bar-fill green" style="width:22%"></div></div>
+            <span>78</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CASE QUEUE PANEL ══ -->
+  <section id="panel-queue" class="panel hidden">
+    <div class="panel-header">
+      <h2>Case Queue</h2>
+      <div class="filter-chips">
+        <button class="chip active" onclick="filterQueue('all', this)">All</button>
+        <button class="chip" onclick="filterQueue('red', this)">🔴 Red</button>
+        <button class="chip" onclick="filterQueue('orange', this)">🟠 Orange</button>
+        <button class="chip" onclick="filterQueue('yellow', this)">🟡 Yellow</button>
+      </div>
+    </div>
+    <div class="queue-list" id="queue-list">
+      <!-- Populated by JS -->
+    </div>
+  </section>
+
+  <!-- ══ IMAGING AI PANEL ══ -->
+  <section id="panel-imaging" class="panel hidden">
+    <div class="panel-header">
+      <h2>Imaging AI Analysis</h2>
+    </div>
+    <div class="imaging-grid">
+      <div class="imaging-upload-card">
+        <h3>Upload Scan</h3>
+        <div class="upload-tabs">
+          <button class="chip active" onclick="setModality('xray', this)">X-Ray</button>
+          <button class="chip" onclick="setModality('mri', this)">Brain MRI</button>
+          <button class="chip" onclick="setModality('cancer', this)">CT Scan</button>
+        </div>
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('scan-upload').click()">
+          <span class="upload-icon">📤</span>
+          <p>Click or drag scan here</p>
+          <span>JPEG, PNG, DICOM supported</span>
+        </div>
+        <input type="file" id="scan-upload" accept="image/*,.dcm" class="hidden" onchange="uploadScan(event)" />
+        <img id="scan-preview" class="hidden scan-preview-img" alt="Scan preview" />
+        <button class="btn-primary" id="analyze-scan-btn" onclick="analyzeScan()" disabled>🔬 Run AI Analysis</button>
+      </div>
+
+      <div class="imaging-result-card" id="imaging-result-card">
+        <h3>Analysis Report</h3>
+        <div class="report-placeholder" id="report-placeholder">
+          <span>🧠</span>
+          <p>Upload a scan to see the AI report here</p>
+        </div>
+        <div class="report-content hidden" id="report-content">
+          <div class="report-tier-row">
+            <span id="report-tier-badge" class="tier-badge-large">🟡 YELLOW</span>
+            <span id="report-modality-label"></span>
+          </div>
+          <div class="report-finding">
+            <strong>AI Finding</strong>
+            <p id="report-finding-text"></p>
+          </div>
+          <div class="report-confidence">
+            <div class="conf-bar-wrap">
+              <div class="conf-bar" id="conf-bar"></div>
+            </div>
+            <span id="report-conf-pct"></span>
+          </div>
+          <div class="report-actions">
+            <button class="btn-secondary" onclick="clearScan()">New Scan</button>
+            <button class="btn-primary" onclick="openPrescriptionFromImaging()">Write Prescription</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ MEDICAL AI CHAT PANEL ══ -->
+  <section id="panel-chat" class="panel hidden">
+    <div class="panel-header">
+      <h2>Medical AI Assistant</h2>
+      <span class="mode-badge">Doctor Mode</span>
+    </div>
+    <div class="doctor-chat-wrap">
+      <div class="chat-messages" id="doctor-chat-messages">
+        <div class="msg bot-msg">
+          <div class="msg-bubble clinical">
+            <p><strong>Anvaya Medical AI</strong> — Doctor Mode</p>
+            <p style="margin-top:6px; font-size:0.85rem; color:#94A3B8;">I provide clinical-depth answers with full terminology, differential diagnoses, and treatment protocol citations. Ask me anything.</p>
+          </div>
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <textarea id="doctor-chat-input" placeholder="Ask a clinical question..." rows="2" onkeydown="handleDoctorChatKey(event)"></textarea>
+        <button class="send-btn" onclick="sendDoctorChat()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ PRESCRIPTIONS PANEL ══ -->
+  <section id="panel-prescriptions" class="panel hidden">
+    <div class="panel-header">
+      <h2>Prescription Generator</h2>
+    </div>
+    <div class="prescription-layout">
+      <div class="rx-form-card">
+        <h3>New Prescription</h3>
+        <div class="form-group">
+          <label>Patient ID</label>
+          <input type="text" id="rx-patient-id" placeholder="Enter patient ID..." class="form-input" />
+        </div>
+        <div class="form-group">
+          <label>Medications</label>
+          <div id="rx-meds-list">
+            <div class="med-entry">
+              <input type="text" placeholder="Medication name" class="form-input" />
+              <input type="text" placeholder="Dose & freq." class="form-input" style="max-width:160px" />
+              <button class="icon-btn-sm" onclick="removeMed(this)">✕</button>
+            </div>
+          </div>
+          <button class="link-btn" onclick="addMed()">+ Add medication</button>
+        </div>
+        <div class="form-group">
+          <label>Follow-up in (days)</label>
+          <input type="number" id="rx-followup" value="7" class="form-input" style="max-width:100px" />
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="rx-notes" rows="3" placeholder="Additional instructions..." class="form-input"></textarea>
+        </div>
+        <div id="rx-interaction-alert" class="interaction-alert hidden"></div>
+        <button class="btn-primary full-width" onclick="submitPrescription()">💊 Generate Prescription</button>
+      </div>
+
+      <div class="rx-history-card">
+        <h3>Recent Prescriptions</h3>
+        <div class="rx-history-list">
+          <div class="rx-history-item">
+            <div>
+              <strong>Ramesh Kumar</strong>
+              <p>Amoxicillin 500mg · 3 days ago</p>
+            </div>
+            <span class="status-chip green">Sent ✓</span>
+          </div>
+          <div class="rx-history-item">
+            <div>
+              <strong>Sunita Bai</strong>
+              <p>Metformin 500mg, Lisinopril 5mg · 1 week ago</p>
+            </div>
+            <span class="status-chip green">Sent ✓</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ REFERRALS PANEL ══ -->
+  <section id="panel-referrals" class="panel hidden">
+    <div class="panel-header"><h2>Referral Manager</h2></div>
+    <div class="prescription-layout">
+      <div class="rx-form-card">
+        <h3>Create Referral</h3>
+        <div class="form-group">
+          <label>Patient ID</label>
+          <input type="text" id="ref-patient-id" placeholder="Patient ID" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label>Referring To (Hospital)</label>
+          <select id="ref-target" class="form-input">
+            <option>District Hospital Beta</option>
+            <option>Medical College & Hospital</option>
+            <option>AIIMS Regional</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Urgency</label>
+          <select id="ref-urgency" class="form-input">
+            <option value="emergency">🔴 Emergency</option>
+            <option value="urgent">🟠 Urgent</option>
+            <option value="routine" selected>🟡 Routine</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Reason & Clinical Summary</label>
+          <textarea id="ref-reason" rows="4" placeholder="Describe findings and reason for referral..." class="form-input"></textarea>
+        </div>
+        <button class="btn-primary full-width" onclick="submitReferral()">🔗 Send Referral</button>
+      </div>
+      <div class="rx-history-card">
+        <h3>Active Referrals</h3>
+        <div class="rx-history-list">
+          <div class="rx-history-item">
+            <div><strong>Arjun Singh</strong><p>→ District Hospital Beta · Emergency</p></div>
+            <span class="status-chip orange">Sent</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ ANALYTICS PANEL ══ -->
+  <section id="panel-analytics" class="panel hidden">
+    <div class="panel-header"><h2>Area Analytics</h2></div>
+    <div class="analytics-grid">
+      <div class="analytics-card full-width">
+        <h3>Disease Distribution — Last 30 Days</h3>
+        <div class="disease-bars large">
+          <div class="disease-bar-item">
+            <span>Pneumonia</span>
+            <div class="bar-track"><div class="bar-fill" style="width:85%"></div></div>
+            <span class="bar-num">340</span>
+          </div>
+          <div class="disease-bar-item">
+            <span>Tuberculosis</span>
+            <div class="bar-track"><div class="bar-fill orange" style="width:30%"></div></div>
+            <span class="bar-num">120</span>
+          </div>
+          <div class="disease-bar-item">
+            <span>Malaria</span>
+            <div class="bar-track"><div class="bar-fill green" style="width:20%"></div></div>
+            <span class="bar-num">78</span>
+          </div>
+          <div class="disease-bar-item">
+            <span>Melanoma (CV)</span>
+            <div class="bar-track"><div class="bar-fill red" style="width:3%"></div></div>
+            <span class="bar-num">12</span>
+          </div>
+        </div>
+      </div>
+      <div class="analytics-card">
+        <h3>Triage Outcomes</h3>
+        <div class="pie-legend">
+          <div class="legend-item"><span class="dot red"></span> Red (2%)</div>
+          <div class="legend-item"><span class="dot orange"></span> Orange (18%)</div>
+          <div class="legend-item"><span class="dot yellow"></span> Yellow (35%)</div>
+          <div class="legend-item"><span class="dot green"></span> Green (45%)</div>
+        </div>
+      </div>
+      <div class="analytics-card">
+        <h3>Response Times</h3>
+        <div class="metric-rows">
+          <div class="metric-row"><span>Avg. time-to-alert</span><strong class="metric-val green">42s</strong></div>
+          <div class="metric-row"><span>Avg. wait (Red)</span><strong class="metric-val green">8 min</strong></div>
+          <div class="metric-row"><span>Follow-up compliance</span><strong class="metric-val orange">73%</strong></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script src="../assets/ui-icons.js"></script>
+<script src="hospital.js"></script>
+</body>
+</html>

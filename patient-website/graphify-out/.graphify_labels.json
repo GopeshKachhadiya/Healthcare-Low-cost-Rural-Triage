@@ -1,0 +1,12 @@
+{
+  "0": "compilerOptions",
+  "1": "package.json",
+  "2": "devDependencies",
+  "3": "App.tsx",
+  "4": "Home.tsx",
+  "5": "dependencies",
+  "6": "Navbar.tsx",
+  "7": "postcss.config.js",
+  "8": "tailwind.config.js",
+  "9": "vite.config.ts"
+}

@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ArogyaMitra — Hospital Panel Login</title>
+  <meta name="description" content="ArogyaMitra Hospital Panel — Secure login for doctors, nurses, and administrators" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Inline critical CSS for login page */
+    :root {
+      --bg-800: #0a0e1a;
+      --bg-700: #0f1422;
+      --bg-600: #141829;
+      --bg-500: #1a1f33;
+      --bg-400: #202540;
+      --surface-1: rgba(20, 24, 41, 0.85);
+      --surface-border: rgba(255, 255, 255, 0.07);
+      --teal: #00d4aa;
+      --teal-dim: #00a887;
+      --teal-light: rgba(0, 212, 170, 0.12);
+      --tier-red: #ff4757;
+      --text-primary: #f0f4ff;
+      --text-secondary: #9aa5c4;
+      --text-muted: #5a6585;
+      --font-sans: 'Inter', -apple-system, sans-serif;
+      --radius-lg: 14px;
+      --radius-xl: 20px;
+      --radius-full: 999px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-800);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Left Hero Panel ── */
+    .hero {
+      position: relative;
+      background: linear-gradient(135deg, #060a14 0%, #0a0e1a 40%, #0d1225 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -200px; left: -100px;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(0,212,170,0.08) 0%, transparent 70%);
+      animation: float 8s ease-in-out infinite;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -150px; right: -100px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(61,157,232,0.06) 0%, transparent 70%);
+      animation: float 10s ease-in-out infinite reverse;
+    }
+
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+    }
+
+    .hero-content { position: relative; z-index: 1; }
+
+    .hero-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 48px;
+    }
+
+    .logo-icon {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--teal), var(--teal-dim));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 0 20px rgba(0,212,170,0.3);
+    }
+
+    .logo-text { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
+    .logo-subtitle { font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; }
+
+    .hero-tagline {
+      font-size: 2.8rem;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+
+    .hero-tagline .accent {
+      background: linear-gradient(135deg, var(--teal), #3d9de8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-desc {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 420px;
+      margin-bottom: 48px;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 32px;
+    }
+
+    .hero-stat-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--teal);
+      line-height: 1;
+    }
+
+    .hero-stat-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 4px;
+    }
+
+    .hero-features {
+      margin-top: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .hero-feature {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .hero-feature-dot {
+      width: 6px; height: 6px;
+      background: var(--teal);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Right Login Panel ── */
+    .login-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px;
+      background: var(--bg-700);
+      border-left: 1px solid var(--surface-border);
+      position: relative;
+      overflow-y: auto;
+    }
+
+    .login-header { margin-bottom: 36px; }
+    .login-title { font-size: 1.75rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.02em; }
+    .login-subtitle { color: var(--text-secondary); font-size: 0.9rem; }
+
+    /* Role selector */
+    .role-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: var(--bg-600);
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      margin-bottom: 28px;
+    }
+
+    .role-tab {
+      flex: 1;
+      padding: 10px 12px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .role-tab:hover { color: var(--text-secondary); background: rgba(255,255,255,0.04); }
+
+    .role-tab.active {
+      background: var(--bg-500);
+      color: var(--text-primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    .role-tab .role-icon { font-size: 1.1rem; display: block; margin-bottom: 2px; }
+
+    /* Form */
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+
+    .form-label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: 0.03em;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--bg-600);
+      border: 1px solid var(--surface-border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      font-family: var(--font-sans);
+      transition: all 0.15s ease;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(0,212,170,0.12);
+      background: var(--bg-500);
+    }
+
+    .form-control::placeholder { color: var(--text-muted); }
+
+    .input-with-icon {
+      position: relative;
+    }
+
+    .input-with-icon .form-control { padding-left: 44px; }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+
+    /* OTP display */
+    .otp-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .otp-input {
+      width: 48px; height: 56px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: var(--bg-600);
+      border: 1px solid var(--surface-border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      transition: all 0.15s ease;
+      outline: none;
+    }
+
+    .otp-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,212,170,0.12); }
+
+    /* Login button */
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--teal), var(--teal-dim));
+      color: #0a0e1a;
+      border: none;
+      border-radius: 10px;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(0,212,170,0.3);
+    }
+
+    .btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,212,170,0.4); }
+    .btn-login:active { transform: translateY(0); }
+
+    .btn-login.loading { opacity: 0.8; cursor: not-allowed; pointer-events: none; }
+
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #0a0e1a;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    .btn-login.loading .spinner { display: block; }
+    .btn-login.loading .btn-text { display: none; }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--surface-border);
+    }
+
+    /* Demo buttons */
+    .demo-logins {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-demo {
+      padding: 10px;
+      background: var(--bg-600);
+      border: 1px solid var(--surface-border);
+      border-radius: 10px;
+      color: var(--text-secondary);
+      font-family: var(--font-sans);
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .btn-demo:hover {
+      background: var(--bg-500);
+      color: var(--text-primary);
+      border-color: rgba(0,212,170,0.3);
+    }
+
+    .btn-demo .demo-role { color: var(--teal); font-weight: 700; font-size: 0.7rem; display: block; }
+
+    /* Security badge */
+    .security-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 24px;
+      padding: 10px 14px;
+      background: rgba(46,213,115,0.06);
+      border: 1px solid rgba(46,213,115,0.15);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .security-icon { font-size: 0.9rem; }
+
+    /* Error message */
+    .form-error {
+      background: rgba(255,71,87,0.1);
+      border: 1px solid rgba(255,71,87,0.3);
+      color: var(--tier-red);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    /* Step indicator */
+    .login-step { display: none; }
+    .login-step.active { display: block; }
+
+    /* Animations */
+    @keyframes float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-30px) scale(1.05); }
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .login-panel { animation: slideUp 0.4s ease; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-700); }
+    ::-webkit-scrollbar-thumb { background: var(--bg-400); border-radius: 3px; }
+
+    /* Password toggle */
+    .password-wrapper { position: relative; }
+    .password-toggle {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0;
+    }
+    .password-toggle:hover { color: var(--text-secondary); }
+  </style>
+  <link rel="stylesheet" href="../assets/project-theme.css" />
+</head>
+<body>
+
+  <!-- ── Left Hero Panel ── -->
+  <div class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-content">
+      <div class="hero-logo">
+        <div class="logo-icon"><i data-lucide="activity" style="color:#040710;"></i></div>
+        <div>
+          <div class="logo-text">ArogyaMitra</div>
+          <div class="logo-subtitle">Hospital Panel</div>
+        </div>
+      </div>
+
+      <h1 class="hero-tagline">
+        AI-Powered<br/>
+        <span class="accent">Clinical Decision</span><br/>
+        Support System
+      </h1>
+
+      <p class="hero-desc">
+        A doctor-grade platform for AI-assisted triage, medical imaging analysis, e-prescriptions, and teleconsult — built for India's rural healthcare system.
+      </p>
+
+      <div class="hero-stats">
+        <div>
+          <div class="hero-stat-value">27</div>
+          <div class="hero-stat-label">AI Agents</div>
+        </div>
+        <div>
+          <div class="hero-stat-value">10</div>
+          <div class="hero-stat-label">Trained Models</div>
+        </div>
+        <div>
+          <div class="hero-stat-value">13</div>
+          <div class="hero-stat-label">Features</div>
+        </div>
+      </div>
+
+      <div class="hero-features">
+        <div class="hero-feature"><div class="hero-feature-dot"></div> Real-time Prioritized Triage Queue (Red → Green)</div>
+        <div class="hero-feature"><div class="hero-feature-dot"></div> AI Brain Tumor, X-ray & Cancer Screening</div>
+        <div class="hero-feature"><div class="hero-feature-dot"></div> Doctor-Grade RAG Medical Assistant</div>
+        <div class="hero-feature"><div class="hero-feature-dot"></div> E-Prescription with Drug Interaction Check</div>
+        <div class="hero-feature"><div class="hero-feature-dot"></div> Area-Wide Disease Dashboard (PostGIS)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right Login Panel ── -->
+  <div class="login-panel">
+    <div class="login-header">
+      <h2 class="login-title">Welcome back</h2>
+      <p class="login-subtitle">Sign in to access the care portal</p>
+    </div>
+
+    <!-- Role Tabs -->
+    <div class="role-tabs" id="roleTabs">
+      <button class="role-tab active" data-role="doctor" onclick="selectRole('doctor', this)" id="roleDoctor">
+        <span class="role-icon"><i data-lucide="stethoscope" style="width:18px;height:18px;margin:0 auto;"></i></span>Doctor
+      </button>
+      <button class="role-tab" data-role="nurse" onclick="selectRole('nurse', this)" id="roleNurse">
+        <span class="role-icon"><i data-lucide="syringe" style="width:18px;height:18px;margin:0 auto;"></i></span>Nurse/ANM
+      </button>
+      <button class="role-tab" data-role="admin" onclick="selectRole('admin', this)" id="roleAdmin">
+        <span class="role-icon"><i data-lucide="bar-chart-2" style="width:18px;height:18px;margin:0 auto;"></i></span>Admin
+      </button>
+      <button class="role-tab" data-role="patient" onclick="selectRole('patient', this)" id="rolePatient">
+        <span class="role-icon"><i data-lucide="user" style="width:18px;height:18px;margin:0 auto;"></i></span>Patient
+      </button>
+    </div>
+
+    <!-- Error Message -->
+    <div class="form-error" id="loginError"></div>
+
+    <!-- Doctor Login Form -->
+    <div class="login-step active" id="stepDoctorLogin">
+      <div class="form-group">
+        <label class="form-label">Email / Medical Council ID</label>
+        <div class="input-with-icon">
+          <span class="input-icon"><i data-lucide="mail" style="width:16px;height:16px;"></i></span>
+          <input type="email" class="form-control" id="doctorEmail" placeholder="priya.sharma@hospital.in" value="priya.sharma@arogyamitra.in" autocomplete="email" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="password-wrapper">
+          <input type="password" class="form-control" id="doctorPassword" placeholder="••••••••" value="doctor123" autocomplete="current-password" />
+          <button class="password-toggle" onclick="togglePassword('doctorPassword', this)" type="button"><i data-lucide="eye" style="width:16px;height:16px;"></i></button>
+        </div>
+      </div>
+
+      <button class="btn-login" id="doctorLoginBtn" onclick="handleDoctorLogin()">
+        <span class="btn-text">Sign In to Hospital Panel →</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+
+    <!-- Nurse Login Form -->
+    <div class="login-step" id="stepNurseLogin">
+      <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        <div class="input-with-icon">
+          <span class="input-icon"><i data-lucide="smartphone" style="width:16px;height:16px;"></i></span>
+          <input type="tel" class="form-control" id="nursePhone" placeholder="+91 98765 43210" value="+91 98765 43210" />
+        </div>
+      </div>
+      <button class="btn-login" onclick="sendOTP()">
+        <span class="btn-text">Send OTP →</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+
+    <!-- Nurse OTP Step -->
+    <div class="login-step" id="stepNurseOTP">
+      <p style="font-size:0.85rem; color: var(--text-secondary); margin-bottom: 16px;">Enter the 6-digit OTP sent to your phone</p>
+      <div class="form-group">
+        <label class="form-label">One-Time Password</label>
+        <div class="otp-row" id="otpRow">
+          <input type="text" maxlength="1" class="otp-input" onkeyup="otpNext(this, 0)" />
+          <input type="text" maxlength="1" class="otp-input" onkeyup="otpNext(this, 1)" />
+          <input type="text" maxlength="1" class="otp-input" onkeyup="otpNext(this, 2)" />
+          <input type="text" maxlength="1" class="otp-input" onkeyup="otpNext(this, 3)" />
+          <input type="text" maxlength="1" class="otp-input" onkeyup="otpNext(this, 4)" />
+          <input type="text" maxlength="1" class="otp-input" onkeyup="otpNext(this, 5)" />
+        </div>
+      </div>
+      <button class="btn-login" onclick="handleNurseLogin()">
+        <span class="btn-text">Verify & Sign In →</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+
+    <!-- Admin Login Form -->
+    <div class="login-step" id="stepAdminLogin">
+      <div class="form-group">
+        <label class="form-label">Admin Email</label>
+        <div class="input-with-icon">
+          <span class="input-icon"><i data-lucide="mail" style="width:16px;height:16px;"></i></span>
+          <input type="email" class="form-control" id="adminEmail" placeholder="admin@district.health.in" value="admin@rampur.health.in" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="password-wrapper">
+          <input type="password" class="form-control" id="adminPassword" placeholder="••••••••" value="admin123" />
+          <button class="password-toggle" onclick="togglePassword('adminPassword', this)" type="button"><i data-lucide="eye" style="width:16px;height:16px;"></i></button>
+        </div>
+      </div>
+      <button class="btn-login" onclick="handleAdminLogin()">
+        <span class="btn-text">Sign In as Admin →</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+
+    <!-- Patient Login Form -->
+    <div class="login-step" id="stepPatientLogin">
+      <div class="form-group">
+        <label class="form-label">Phone Number / ABHA ID</label>
+        <div class="input-with-icon">
+          <span class="input-icon"><i data-lucide="smartphone" style="width:16px;height:16px;"></i></span>
+          <input type="text" class="form-control" id="patientPhone" placeholder="+91 98765 43210 or ABHA ID" value="+91 90000 12345" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Preferred Language</label>
+        <select class="form-control" id="patientLang">
+          <option value="en">English</option>
+          <option value="hi">Hindi</option>
+          <option value="ta">Tamil</option>
+          <option value="te">Telugu</option>
+          <option value="bn">Bengali</option>
+        </select>
+      </div>
+      <button class="btn-login" id="patientLoginBtn" onclick="handlePatientLogin()">
+        <span class="btn-text">Continue to Patient Panel</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+
+    <!-- Divider -->
+    <div class="divider">Quick Demo Access</div>
+
+    <!-- Demo Logins -->
+    <div class="demo-logins">
+      <button class="btn-demo" onclick="demoLogin('doctor')">
+        <span class="demo-role"><i data-lucide="stethoscope" style="width:12px;height:12px;margin-right:4px;"></i> DOCTOR</span>
+        Dr. Priya Sharma<br/>Full Access
+      </button>
+      <button class="btn-demo" onclick="demoLogin('nurse')">
+        <span class="demo-role"><i data-lucide="syringe" style="width:12px;height:12px;margin-right:4px;"></i> NURSE</span>
+        ANM Kamla Devi<br/>Limited Access
+      </button>
+      <button class="btn-demo" onclick="demoLogin('admin')">
+        <span class="demo-role"><i data-lucide="bar-chart-2" style="width:12px;height:12px;margin-right:4px;"></i> ADMIN</span>
+        District Admin<br/>Dashboard Only
+      </button>
+      <button class="btn-demo" onclick="demoLogin('specialist')">
+        <span class="demo-role"><i data-lucide="brain" style="width:12px;height:12px;margin-right:4px;"></i> SPECIALIST</span>
+        Dr. Arjun (Neuro)<br/>Referral Cases
+      </button>
+      <button class="btn-demo" onclick="demoLogin('patient')">
+        <span class="demo-role"><i data-lucide="user" style="width:12px;height:12px;margin-right:4px;"></i> PATIENT</span>
+        Rural Patient<br/>User Panel
+      </button>
+    </div>
+
+    <!-- Security Badge -->
+    <div class="security-badge">
+      <span class="security-icon"><i data-lucide="lock" style="width:14px;height:14px;"></i></span>
+      <span>Supabase Auth · JWT Role Claims · Row Level Security · All data encrypted at rest</span>
+    </div>
+  </div>
+
+  <script src="../assets/ui-icons.js"></script>
+  <script>
+    let currentRole = 'doctor';
+
+    function selectRole(role, tab) {
+      currentRole = role;
+      document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      // Hide all steps
+      document.querySelectorAll('.login-step').forEach(s => s.classList.remove('active'));
+
+      if (role === 'doctor') {
+        document.getElementById('stepDoctorLogin').classList.add('active');
+      } else if (role === 'nurse') {
+        document.getElementById('stepNurseLogin').classList.add('active');
+      } else if (role === 'admin') {
+        document.getElementById('stepAdminLogin').classList.add('active');
+      } else if (role === 'patient') {
+        document.getElementById('stepPatientLogin').classList.add('active');
+      }
+
+      clearError();
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('loginError');
+      el.style.display = 'block';
+      el.textContent = msg;
+    }
+
+    function clearError() {
+      document.getElementById('loginError').style.display = 'none';
+    }
+
+    function togglePassword(id, btn) {
+      const input = document.getElementById(id);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = '<i data-lucide="eye-off" style="width:16px;height:16px;"></i>';
+      } else {
+        input.type = 'password';
+        btn.innerHTML = '<i data-lucide="eye" style="width:16px;height:16px;"></i>';
+      }
+      lucide.createIcons();
+    }
+
+    function setLoading(btnId, loading) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      if (loading) btn.classList.add('loading');
+      else btn.classList.remove('loading');
+    }
+
+    function simulateLogin(role, name, facility, redirectDelay = 1800) {
+      const session = {
+        role,
+        name,
+        facility,
+        loggedIn: true,
+        loginAt: new Date().toISOString(),
+      };
+      localStorage.setItem('arogyamitra_session', JSON.stringify(session));
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, redirectDelay);
+    }
+
+    function simulatePatientLogin(redirectDelay = 800) {
+      const lang = document.getElementById('patientLang')?.value || 'en';
+      const phone = document.getElementById('patientPhone')?.value || '+91 90000 12345';
+      localStorage.setItem('anvaya_lang', lang);
+      localStorage.setItem('anvaya_patient_id', 'pat_demo_user');
+      localStorage.setItem('anvaya_patient_session', JSON.stringify({
+        loggedIn: true,
+        phone,
+        lang,
+        loginAt: new Date().toISOString(),
+      }));
+      setTimeout(() => {
+        window.location.href = '../frontend/patient.html';
+      }, redirectDelay);
+    }
+
+    function handleDoctorLogin() {
+      clearError();
+      const email = document.getElementById('doctorEmail').value.trim();
+      const pass = document.getElementById('doctorPassword').value;
+      if (!email || !pass) { showError('Please enter email and password.'); return; }
+      setLoading('doctorLoginBtn', true);
+      setTimeout(() => {
+        if (pass.length < 6) { setLoading('doctorLoginBtn', false); showError('Invalid credentials. Please try again.'); return; }
+        simulateLogin('doctor', 'Dr. Priya Sharma', 'PHC Rampur, UP');
+      }, 1200);
+    }
+
+    function sendOTP() {
+      const phone = document.getElementById('nursePhone').value;
+      if (!phone) { showError('Please enter your phone number.'); return; }
+      clearError();
+      document.getElementById('stepNurseLogin').classList.remove('active');
+      document.getElementById('stepNurseOTP').classList.add('active');
+    }
+
+    function handleNurseLogin() {
+      simulateLogin('nurse', 'ANM Kamla Devi', 'PHC Rampur, UP');
+    }
+
+    function handleAdminLogin() {
+      clearError();
+      const email = document.getElementById('adminEmail').value;
+      const pass = document.getElementById('adminPassword').value;
+      if (!email || !pass) { showError('Please enter admin credentials.'); return; }
+      simulateLogin('admin', 'District Admin — Rampur', 'Rampur District Health Office');
+    }
+
+    function handlePatientLogin() {
+      clearError();
+      const phone = document.getElementById('patientPhone').value.trim();
+      if (!phone) { showError('Please enter phone number or ABHA ID.'); return; }
+      simulatePatientLogin();
+    }
+
+    function demoLogin(role) {
+      clearError();
+      if (role === 'patient') {
+        simulatePatientLogin(400);
+        return;
+      }
+      const demos = {
+        doctor:     { name: 'Dr. Priya Sharma',        facility: 'PHC Rampur, UP' },
+        nurse:      { name: 'ANM Kamla Devi',           facility: 'PHC Rampur, UP' },
+        admin:      { name: 'District Admin — Rampur',  facility: 'Rampur District Health Office' },
+        specialist: { name: 'Dr. Arjun Mehta (Neuro)', facility: 'CHC Moradabad' },
+      };
+      const demo = demos[role] || demos.doctor;
+
+      // Flash the button
+      const btns = document.querySelectorAll('.btn-demo');
+      btns.forEach(b => b.style.opacity = '0.5');
+      setTimeout(() => btns.forEach(b => b.style.opacity = '1'), 300);
+
+      simulateLogin(role, demo.name, demo.facility, 800);
+    }
+
+    function otpNext(input, index) {
+      if (input.value.length === 1) {
+        const inputs = document.querySelectorAll('.otp-input');
+        if (index < inputs.length - 1) inputs[index + 1].focus();
+        else handleNurseLogin();
+      }
+    }
+
+    // Check if already logged in
+    window.addEventListener('load', () => {
+      lucide.createIcons();
+      const session = localStorage.getItem('arogyamitra_session');
+      if (session) {
+        try {
+          const s = JSON.parse(session);
+          if (s.loggedIn) {
+            window.location.href = 'dashboard.html';
+          }
+        } catch(e) { localStorage.removeItem('arogyamitra_session'); }
+      }
+    });
+
+    // Enter key for login
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        if (currentRole === 'doctor') handleDoctorLogin();
+        else if (currentRole === 'admin') handleAdminLogin();
+        else if (currentRole === 'patient') handlePatientLogin();
+      }
+    });
+  </script>
+</body>
+</html>

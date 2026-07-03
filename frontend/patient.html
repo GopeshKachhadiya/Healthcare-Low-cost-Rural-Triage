@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anvaya — Rural Health Assistant</title>
+  <meta name="description" content="Anvaya is your AI-powered rural health assistant. Chat with a doctor, screen for skin and eye conditions, and get immediate help in your language." />
+  <meta name="theme-color" content="#0d1b2e" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="patient.css" />
+  <link rel="stylesheet" href="../assets/project-theme.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     SPLASH SCREEN
+══════════════════════════════════════════ -->
+<div id="splash" class="splash">
+  <div class="splash-logo">
+    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="32" fill="url(#grad1)"/>
+      <path d="M32 16 C22 16, 16 24, 16 32 C16 40, 22 48, 32 48 C42 48, 48 40, 48 32 C48 24, 42 16, 32 16Z" stroke="white" stroke-width="2.5" fill="none"/>
+      <path d="M32 22 L32 42 M22 32 L42 32" stroke="white" stroke-width="3" stroke-linecap="round"/>
+      <defs>
+        <linearGradient id="grad1" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#2563EB"/>
+          <stop offset="100%" stop-color="#0EA5E9"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <h1>Anvaya</h1>
+    <p>Your Health, Your Language</p>
+  </div>
+  <div class="splash-spinner"></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     LANGUAGE SELECT
+══════════════════════════════════════════ -->
+<div id="lang-screen" class="screen hidden">
+  <div class="lang-container">
+    <div class="logo-small">
+      <svg width="36" height="36" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="32" fill="url(#grad2)"/><path d="M32 22 L32 42 M22 32 L42 32" stroke="white" stroke-width="3" stroke-linecap="round"/><defs><linearGradient id="grad2" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0EA5E9"/></linearGradient></defs></svg>
+      <span>Anvaya</span>
+    </div>
+    <h2>Choose your language</h2>
+    <p class="lang-sub">अपनी भाषा चुनें • உங்கள் மொழியைத் தேர்ந்தெடுங்கள்</p>
+    <div class="lang-grid">
+      <button class="lang-btn" data-lang="hi" onclick="selectLanguage('hi')">हिंदी<span>Hindi</span></button>
+      <button class="lang-btn" data-lang="en" onclick="selectLanguage('en')">English<span>English</span></button>
+      <button class="lang-btn" data-lang="ta" onclick="selectLanguage('ta')">தமிழ்<span>Tamil</span></button>
+      <button class="lang-btn" data-lang="te" onclick="selectLanguage('te')">తెలుగు<span>Telugu</span></button>
+      <button class="lang-btn" data-lang="kn" onclick="selectLanguage('kn')">ಕನ್ನಡ<span>Kannada</span></button>
+      <button class="lang-btn" data-lang="bn" onclick="selectLanguage('bn')">বাংলা<span>Bengali</span></button>
+      <button class="lang-btn" data-lang="mr" onclick="selectLanguage('mr')">मराठी<span>Marathi</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════ -->
+<div id="app" class="hidden">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <svg width="28" height="28" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="32" fill="url(#grad3)"/><path d="M32 22 L32 42 M22 32 L42 32" stroke="white" stroke-width="3" stroke-linecap="round"/><defs><linearGradient id="grad3" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0EA5E9"/></linearGradient></defs></svg>
+      <span class="header-title">Anvaya</span>
+    </div>
+    <div class="header-right">
+      <div class="signal-bar" id="offline-badge" style="display:none;">
+        <span>📡 Offline Mode</span>
+      </div>
+      <button class="icon-btn" id="lang-switch-btn" onclick="showScreen('lang-screen')" title="Change language">🌐</button>
+      <button class="patient-logout-btn" id="logout-btn" onclick="logoutPatient()" title="Logout" type="button">Logout</button>
+    </div>
+  </header>
+
+  <!-- Emergency Banner -->
+  <div class="emergency-banner hidden" id="emergency-banner">
+    <span>⚠️</span>
+    <div>
+      <strong>Emergency Detected</strong>
+      <p>A health worker has been alerted. Help is coming.</p>
+    </div>
+    <button onclick="dismissBanner()">✕</button>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="nav-home" onclick="switchTab('home')">
+      <span>🏠</span><label>Home</label>
+    </button>
+    <button class="nav-btn" id="nav-chat" onclick="switchTab('chat')">
+      <span>💬</span><label>Chat</label>
+    </button>
+    <button class="nav-btn" id="nav-screen" onclick="switchTab('screen')">
+      <span>🔬</span><label>Screen</label>
+    </button>
+    <button class="nav-btn" id="nav-history" onclick="switchTab('history')">
+      <span>📋</span><label>History</label>
+    </button>
+  </nav>
+
+  <!-- ── HOME TAB ── -->
+  <main id="tab-home" class="tab-content active">
+    <div class="home-hero">
+      <div class="greeting">
+        <h2 id="greeting-text">Good morning 👋</h2>
+        <p id="greeting-sub">How are you feeling today?</p>
+      </div>
+      <div class="vitals-quick">
+        <div class="vital-pill" id="tier-pill" data-tier="green">
+          <span>🟢</span> <strong>All Good</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <section class="quick-actions">
+      <h3>Quick Actions</h3>
+      <div class="action-grid">
+        <button class="action-card" onclick="switchTab('chat')">
+          <span class="action-icon">💬</span>
+          <span class="action-label">Ask Doctor AI</span>
+          <span class="action-sub">Get health advice</span>
+        </button>
+        <button class="action-card" onclick="switchTab('screen')">
+          <span class="action-icon">📷</span>
+          <span class="action-label">Scan Skin</span>
+          <span class="action-sub">Detect conditions</span>
+        </button>
+        <button class="action-card danger" onclick="triggerEmergency()">
+          <span class="action-icon">🚨</span>
+          <span class="action-label">Emergency</span>
+          <span class="action-sub">Call for help now</span>
+        </button>
+        <button class="action-card" onclick="showAppointmentModal()">
+          <span class="action-icon">🏥</span>
+          <span class="action-label">Book Visit</span>
+          <span class="action-sub">Find nearest clinic</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Health Tips -->
+    <section class="health-tips">
+      <h3>Today's Health Tip</h3>
+      <div class="tip-card">
+        <div class="tip-icon">💧</div>
+        <div class="tip-text">
+          <strong>Stay Hydrated</strong>
+          <p>Drink at least 8 glasses of water today. Dehydration can cause headaches and fatigue.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ── CHAT TAB ── -->
+  <main id="tab-chat" class="tab-content hidden">
+    <div class="chat-header">
+      <div class="chat-avatar">🤖</div>
+      <div>
+        <strong>Anvaya Health AI</strong>
+        <span class="online-dot">● Online</span>
+      </div>
+      <button class="icon-btn" onclick="clearChat()" title="Clear chat">🗑</button>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg bot-msg">
+        <div class="msg-bubble">
+          <p>Namaste! 🙏 I am Anvaya, your health assistant. How can I help you today?</p>
+          <p style="font-size:0.8rem; opacity:0.7; margin-top:4px;">I can help with health questions, symptoms, and connecting you to care.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="Voice input">🎤</button>
+      <div class="chat-input-wrap">
+        <textarea id="chat-input" placeholder="Type your health question..." rows="1" onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+      </div>
+      <button class="send-btn" onclick="sendChat()" title="Send">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+      </button>
+    </div>
+  </main>
+
+  <!-- ── SCREEN TAB ── -->
+  <main id="tab-screen" class="tab-content hidden">
+    <div class="screen-header">
+      <h2>Health Screening</h2>
+      <p>Take a photo to check for skin, eye, or oral conditions</p>
+    </div>
+
+    <div class="screen-options">
+      <div class="screen-card" onclick="openCamera('skin')">
+        <div class="screen-icon">🩺</div>
+        <h4>Skin Check</h4>
+        <p>Detect rashes, lesions, and skin conditions</p>
+        <span class="screen-badge">AI Powered</span>
+      </div>
+      <div class="screen-card" onclick="openCamera('eye')">
+        <div class="screen-icon">👁</div>
+        <h4>Eye Check</h4>
+        <p>Screen for diabetic retinopathy, glaucoma</p>
+        <span class="screen-badge">AI Powered</span>
+      </div>
+      <div class="screen-card" onclick="openCamera('oral')">
+        <div class="screen-icon">🦷</div>
+        <h4>Oral Check</h4>
+        <p>Detect oral lesions and conditions</p>
+        <span class="screen-badge">AI Powered</span>
+      </div>
+    </div>
+
+    <!-- Camera / Upload area -->
+    <div class="camera-area hidden" id="camera-area">
+      <div class="camera-preview">
+        <video id="camera-preview" autoplay playsinline></video>
+        <canvas id="camera-canvas" class="hidden"></canvas>
+        <img id="captured-img" class="hidden" alt="Captured photo" />
+      </div>
+      <div class="camera-controls">
+        <button class="btn-secondary" onclick="closeCamera()">✕ Cancel</button>
+        <button class="btn-primary" id="capture-btn" onclick="capturePhoto()">📷 Capture</button>
+        <button class="btn-primary hidden" id="analyze-btn" onclick="analyzePhoto()">🔬 Analyze</button>
+      </div>
+    </div>
+
+    <!-- Result Card -->
+    <div class="result-card hidden" id="result-card">
+      <div class="result-header" id="result-header">
+        <span id="result-tier-icon">🟢</span>
+        <div>
+          <strong id="result-condition">Result</strong>
+          <p id="result-confidence"></p>
+        </div>
+      </div>
+      <p id="result-message"></p>
+      <div class="result-actions">
+        <button class="btn-secondary" onclick="resetScreen()">New Scan</button>
+        <button class="btn-primary" id="result-action-btn">Book Appointment</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── HISTORY TAB ── -->
+  <main id="tab-history" class="tab-content hidden">
+    <h2 class="tab-title">My Health History</h2>
+    <div class="history-list" id="history-list">
+      <div class="history-item">
+        <div class="history-icon">🔬</div>
+        <div class="history-info">
+          <strong>Skin Screening</strong>
+          <p>Result: No critical finding · Green</p>
+          <span class="history-date">2 days ago</span>
+        </div>
+        <span class="tier-badge green">✓</span>
+      </div>
+      <div class="history-item">
+        <div class="history-icon">💬</div>
+        <div class="history-info">
+          <strong>Health Chat</strong>
+          <p>Asked about fever symptoms</p>
+          <span class="history-date">5 days ago</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Hidden file input for photo upload fallback -->
+  <input type="file" id="file-input" accept="image/*" capture="environment" class="hidden" onchange="handleFileUpload(event)" />
+
+</div>
+
+<!-- Appointment Modal -->
+<div class="modal-overlay hidden" id="appt-modal">
+  <div class="modal">
+    <h3>Book a Health Visit</h3>
+    <p>Finding nearest clinic to your location...</p>
+    <div class="modal-loader" id="appt-loader">
+      <div class="spinner-sm"></div>
+      <span>Locating facilities...</span>
+    </div>
+    <div class="modal-facility hidden" id="appt-facility">
+      <div class="facility-icon">🏥</div>
+      <div>
+        <strong id="facility-name">Primary Health Centre</strong>
+        <p id="facility-distance">2.3 km away</p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('appt-modal')">Cancel</button>
+      <button class="btn-primary" onclick="confirmAppointment()">Confirm Booking</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/ui-icons.js"></script>
+<script src="patient.js"></script>
+</body>
+</html>
