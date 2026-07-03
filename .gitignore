@@ -3,3 +3,10 @@ dist/
 build/
 .env
 .DS_Store
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# ML Models (Large Files)
+*.pt

@@ -1,7 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import PulseDivider from "../components/PulseDivider";
-import { MapPin, Phone, HelpCircle, Shield, Award, CheckCircle, ArrowLeft } from "lucide-react";
+import { MapPin, Phone, HelpCircle, Shield, Award, CheckCircle, ArrowLeft, Navigation } from "lucide-react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// Fix for default Leaflet markers in React
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+});
+
+const userIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 interface Facility {
   id: string;
@@ -11,40 +31,125 @@ interface Facility {
   capabilities: string[];
   phone: string;
   address: string;
+  lat: number;
+  lng: number;
 }
 
-const FACILITIES: Facility[] = [
+const INITIAL_FACILITIES: Facility[] = [
   {
     id: "f-1",
-    name: "Chandpur Sub-Center",
-    type: "Sub-Center",
-    distance: 0.8,
-    capabilities: ["Basic Vitals Check", "Maternity First-Aid", "ASHA Worker Presence"],
-    phone: "+91 88990 01122",
-    address: "Main Chaupal, Near Government School, Chandpur"
+    name: "Civil Hospital Surat",
+    type: "District Referral Hospital",
+    distance: 0,
+    capabilities: ["Dermatology Specialist", "ICU Beds", "MRI Imaging", "Cardiology Clinic", "AYUSH Hospital Wing"],
+    phone: "+91 261 2244456",
+    address: "Majura Gate, Surat",
+    lat: 21.1824,
+    lng: 72.8123
   },
   {
     id: "f-2",
-    name: "Chandpur Primary Health Centre (PHC)",
-    type: "Primary Health Centre (PHC)",
-    distance: 2.4,
-    capabilities: ["On-call Medical Officer", "X-Ray Screening", "Ayurvedic OPD", "Emergency Transport"],
-    phone: "+91 88990 02233",
-    address: "Block Road, Near Bus Stand, Chandpur Block"
+    name: "SMIMER Hospital",
+    type: "District Referral Hospital",
+    distance: 0,
+    capabilities: ["ICU Beds", "X-Ray Screening", "Emergency Transport"],
+    phone: "+91 261 2345678",
+    address: "Umarwada, Surat",
+    lat: 21.1969,
+    lng: 72.8465
   },
   {
     id: "f-3",
-    name: "District Referral Hospital",
-    type: "District Referral Hospital",
-    distance: 14.5,
-    capabilities: ["Dermatology Specialist", "ICU Beds", "MRI Imaging", "Cardiology Clinic", "AYUSH Hospital Wing"],
-    phone: "+91 88990 04400",
-    address: "Civil Lines, Near District Court, Headquarter Town"
+    name: "Adajan Primary Health Centre",
+    type: "Primary Health Centre (PHC)",
+    distance: 0,
+    capabilities: ["On-call Medical Officer", "X-Ray Screening", "Basic Vitals Check"],
+    phone: "+91 261 2788999",
+    address: "Adajan, Surat",
+    lat: 21.1959,
+    lng: 72.7933
+  },
+  {
+    id: "f-4",
+    name: "Udhna Sub-Center",
+    type: "Sub-Center",
+    distance: 0,
+    capabilities: ["Basic Vitals Check", "Maternity First-Aid", "ASHA Worker Presence"],
+    phone: "+91 261 2988111",
+    address: "Udhna, Surat",
+    lat: 21.1561,
+    lng: 72.8360
   }
 ];
 
+// Surat default center
+const SURAT_CENTER: [number, number] = [21.1702, 72.8311];
+
+// Haversine formula to calculate distance in km
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+}
+
+function MapUpdater({ center }: { center: [number, number] }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, map.getZoom());
+  }, [center, map]);
+  return null;
+}
+
 export default function HospitalMap() {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [facilities, setFacilities] = useState<Facility[]>(INITIAL_FACILITIES);
+  const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+
+  // Initialize distances based on Surat center as a fallback initially
+  useEffect(() => {
+    updateDistances(SURAT_CENTER[0], SURAT_CENTER[1]);
+  }, []);
+
+  const updateDistances = async (lat: number, lng: number) => {
+    try {
+      const response = await fetch("http://localhost:8012/locate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          latitude: lat,
+          longitude: lng,
+          required_tier: "PHC"
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === "success") {
+        const fetchedFacilities = [data.nearest_facility, ...data.alternatives].map(f => ({
+          ...f,
+          type: f.tier || "Primary Health Centre (PHC)"
+        }));
+        setFacilities(fetchedFacilities);
+      }
+    } catch (error) {
+      console.error("Failed to fetch from hospital locator script:", error);
+      // Fallback if API fails
+      const updated = INITIAL_FACILITIES.map(f => ({
+        ...f,
+        distance: Number(calculateDistance(lat, lng, f.lat, f.lng).toFixed(1))
+      })).sort((a, b) => a.distance - b.distance);
+      setFacilities(updated);
+    }
+  };
 
   const handleToggleFilter = (filter: string) => {
     setSelectedFilters((prev) =>
@@ -52,26 +157,66 @@ export default function HospitalMap() {
     );
   };
 
-  const filteredFacilities = FACILITIES.filter((f) =>
+  const handleFindNearest = () => {
+    setIsLocating(true);
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLoc([latitude, longitude]);
+          updateDistances(latitude, longitude);
+          setIsLocating(false);
+        },
+        (error) => {
+          console.error("Error obtaining location", error);
+          alert("Could not get your exact location. Simulating a location in Surat for demonstration.");
+          // Mock location in Surat (e.g., near Adajan)
+          const mockLat = 21.1950;
+          const mockLng = 72.8000;
+          setUserLoc([mockLat, mockLng]);
+          updateDistances(mockLat, mockLng);
+          setIsLocating(false);
+        },
+        { timeout: 10000 }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
+      setIsLocating(false);
+    }
+  };
+
+  const filteredFacilities = facilities.filter((f) =>
     selectedFilters.every((req) => f.capabilities.includes(req))
   );
 
+  const mapCenter = userLoc || SURAT_CENTER;
+
   return (
     <div className="mx-auto max-w-4xl px-5 py-10">
-      <div className="flex items-center gap-3">
-        <Link
-          to="/"
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-ink/10 bg-white text-ink hover:border-teal-400 hover:text-teal-600 transition-all shadow-sm shrink-0"
-          aria-label="Back to Home"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <div>
-          <h1 className="font-display text-3xl font-bold text-teal-700">Nearby Referral Clinics</h1>
-          <p className="text-sm text-ink/60">Find the closest health facility capable of treating your flagged concerns</p>
+      <div className="flex items-center gap-3 justify-between">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/"
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-ink/10 bg-white text-ink hover:border-teal-400 hover:text-teal-600 transition-all shadow-sm shrink-0"
+            aria-label="Back to Home"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div>
+            <h1 className="font-display text-3xl font-bold text-teal-700">Nearby Referral Clinics</h1>
+            <p className="text-sm text-ink/60">Find the closest health facility capable of treating your flagged concerns</p>
+          </div>
         </div>
+        
+        <button 
+          onClick={handleFindNearest}
+          disabled={isLocating}
+          className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-teal-700 transition-colors disabled:opacity-50"
+        >
+          <Navigation className={`h-4 w-4 ${isLocating ? 'animate-spin' : ''}`} />
+          {isLocating ? "Locating..." : "Use My Location"}
+        </button>
       </div>
-
 
       <PulseDivider className="my-6 opacity-30" />
 
@@ -107,34 +252,37 @@ export default function HospitalMap() {
             </div>
           </div>
 
-          {/* Stylized Clinic Map Graphic */}
-          <div className="rounded-xl border border-ink/10 bg-white p-4 shadow-sm">
-            <h3 className="font-semibold text-ink mb-3 text-sm">Topography Overview</h3>
-            <div className="relative h-48 w-full overflow-hidden rounded bg-paper flex items-center justify-center border border-ink/5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 200 150" className="p-2">
-                <rect width="100%" height="100%" fill="#fbf8f3" />
-                {/* Simulated contour road traces */}
-                <path d="M 10 75 Q 100 100 190 75" fill="none" stroke="#e6dcd3" strokeWidth="6" />
-                <path d="M 100 10 L 100 140" fill="none" stroke="#e6dcd3" strokeWidth="4" />
+          {/* Map Graphic */}
+          <div className="rounded-xl border border-ink/10 bg-white p-2 shadow-sm relative z-0">
+            <h3 className="font-semibold text-ink mb-2 px-2 pt-2 text-sm">Surat Area Overview</h3>
+            <div className="h-64 w-full overflow-hidden rounded bg-paper">
+              <MapContainer 
+                center={mapCenter} 
+                zoom={12} 
+                style={{ height: '100%', width: '100%' }}
+                scrollWheelZoom={false}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <MapUpdater center={mapCenter} />
+                
+                {userLoc && (
+                  <Marker position={userLoc} icon={userIcon}>
+                    <Popup>Your Location</Popup>
+                  </Marker>
+                )}
 
-                {/* Patient location dot */}
-                <circle cx="100" cy="75" r="8" fill="#0f6b5c" className="animate-ping" />
-                <circle cx="100" cy="75" r="5" fill="#0f6b5c" />
-                <text x="100" y="93" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#1f2a37">My Location (Chandpur)</text>
-
-                {/* Facilities */}
-                {/* Subcenter */}
-                <circle cx="120" cy="65" r="4" fill="#eeab55" />
-                <text x="126" y="67" fontSize="5" fontWeight="bold" fill="#c77f1f">Subcenter (0.8km)</text>
-
-                {/* PHC */}
-                <circle cx="90" cy="35" r="5" fill="#0b5449" />
-                <text x="97" y="37" fontSize="5" fontWeight="bold" fill="#0b5449">PHC Clinic (2.4km)</text>
-
-                {/* Referral */}
-                <circle cx="160" cy="115" r="5" fill="#e03131" />
-                <text x="154" y="125" fontSize="5" fontWeight="bold" fill="#e03131">Referral Hosp (14.5km)</text>
-              </svg>
+                {filteredFacilities.map(f => (
+                  <Marker key={f.id} position={[f.lat, f.lng]}>
+                    <Popup>
+                      <strong>{f.name}</strong><br/>
+                      {f.distance} km away
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
             </div>
           </div>
         </div>
