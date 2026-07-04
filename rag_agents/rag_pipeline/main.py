@@ -2,6 +2,10 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import httpx
 import json
+import os
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 app = FastAPI(title="RAG Pipeline API", description="Agents R3 (Retrieval), R4 (Generator), R5 (Formatter)")
 
@@ -11,7 +15,7 @@ class RAGQuery(BaseModel):
 
 # Mock Supabase URL and OpenRouter Key
 SUPABASE_URL = "https://your-project.supabase.co/rest/v1/rpc/match_documents"
-OPENROUTER_API_KEY = "sk-or-v1-..."
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 @app.post("/ask")
 async def ask_rag_pipeline(req: RAGQuery):
@@ -39,8 +43,7 @@ async def ask_rag_pipeline(req: RAGQuery):
         
         context_str = "\n".join([f"[{p['source']}]: {p['content']}" for p in mock_retrieved_context])
         
-        # Mocking the OpenRouter HTTP Call
-        '''
+        # Calling the OpenRouter API
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 "https://openrouter.ai/api/v1/chat/completions",
@@ -54,8 +57,6 @@ async def ask_rag_pipeline(req: RAGQuery):
                 }
             )
             llm_response = resp.json()['choices'][0]['message']['content']
-        '''
-        llm_response = f"Based on the provided information, if you have a fever and chest pain, you should assess for other signs [Source: WHO IMCI Guide]. I cannot prescribe medications, but note that ibuprofen is contraindicated for severe asthma [Source: Indian National Formulary]."
         
         # ==========================================
         # AGENT R5: Response Formatter

@@ -7,12 +7,12 @@ import psutil
 # Map of all agent paths to their intended ports
 AGENTS = [
     # Orchestrators
-    ("orchestrators/patient_orchestrator/main.py", 8000),
+    ("orchestrators/patient_orchestrator/main.py", 8080),
     ("orchestrators/hospital_orchestrator/main.py", 8050),
     
     # NLP & RAG Agents
-    ("nlp_agents/language_processor/main.py", 8001),
-    ("nlp_agents/query_understanding/main.py", 8006),
+    # ("nlp_agents/language_processor/main.py", 8001), # Heavy HF model
+    # ("nlp_agents/query_understanding/main.py", 8006), # Heavy HF model
     ("rag_agents/rag_pipeline/main.py", 8031),
     
     # Safety Agents
@@ -27,14 +27,14 @@ AGENTS = [
     ("action_agents/drug_interaction_checker/main.py", 8015),
     ("action_agents/referral_manager/main.py", 8016),
     
-    # CV & Imaging Agents
-    ("cv_agents/mri_preprocessor/main.py", 8008),
-    ("cv_agents/brain_tumor_segmenter/main.py", 8002),
-    ("cv_agents/brain_tumor_classifier/main.py", 8003),
-    ("cv_agents/xray_analyzer/main.py", 8004),
-    ("cv_agents/skin_screener/main.py", 8005),
-    ("cv_agents/cancer_screening_engine/main.py", 8009),
-    ("cv_agents/imaging_interpreter/main.py", 8007),
+    # CV & Imaging Agents (Commented out to prevent RAM crash / HuggingFace downloads)
+    # ("cv_agents/mri_preprocessor/main.py", 8008),
+    # ("cv_agents/brain_tumor_segmenter/main.py", 8002),
+    # ("cv_agents/brain_tumor_classifier/main.py", 8003),
+    # ("cv_agents/xray_analyzer/main.py", 8004),
+    # ("cv_agents/skin_screener/main.py", 8005),
+    # ("cv_agents/cancer_screening_engine/main.py", 8009),
+    # ("cv_agents/imaging_interpreter/main.py", 8007),
     
     # Monitoring Agents
     ("monitoring_agents/dashboard/main.py", 8041),

@@ -11,8 +11,9 @@ export function useChat() {
     // Send user message
     addChatMessage(text, "user");
 
+    let fetchErrorMsg = "";
     try {
-      const response = await fetch("http://localhost:8000/route", {
+      const response = await fetch("http://127.0.0.1:9000/route", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -20,7 +21,13 @@ export function useChat() {
         body: JSON.stringify({
           patient_id: user?.phone || "+91 98765 43210",
           action: "chat",
-          payload: { text },
+          payload: { 
+            text,
+            history: chatHistory.map(m => ({
+              role: m.sender === "bot" ? "assistant" : "user",
+              content: m.text
+            }))
+          },
           language: user?.preferredLanguage || "hi",
         }),
       });
@@ -75,9 +82,14 @@ export function useChat() {
           }
           return;
         }
+
+        fetchErrorMsg = `Result Mismatch: ${JSON.stringify(result)}`;
+      } else {
+         fetchErrorMsg = `Backend returned HTTP ${response.status}`;
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to query Patient Orchestrator backend:", err);
+      fetchErrorMsg = err.message || "Network Error";
     }
 
     // Fallback to local simulation if backend fails/is offline
@@ -102,7 +114,7 @@ export function useChat() {
           { text: string; sources: { title: string; content: string }[]; isRed?: boolean }
         > = {
           disease: {
-            text: "Diabetes Mellitus is a metabolic disorder where the body cannot properly regulate glucose levels in the blood. Type 2 diabetes is common in adults and is managed by physical activity, healthy diet, and medications like Metformin.",
+            text: `⚠️ Our medical assistant is temporarily unavailable. Please try again in a moment, or call your nearest health center directly.`,
             sources: [
               {
                 title: "ICMR Standard Guidelines (Endocrine Section, p. 14)",
@@ -116,7 +128,7 @@ export function useChat() {
             ],
           },
           medicine: {
-            text: "Paracetamol (Acetaminophen) is a mild analgesic (pain reliever) and antipyretic (fever reducer). Standard adult dosage is 500mg-650mg up to 4 times a day. Do not exceed 4000mg in 24 hours to avoid liver toxicity.",
+            text: `⚠️ Our medical assistant is temporarily unavailable. Please try again in a moment, or call your nearest health center directly.`,
             sources: [
               {
                 title: "Indian National Formulary (INF 2021, p. 288)",
@@ -126,7 +138,7 @@ export function useChat() {
             ],
           },
           emergency: {
-            text: "CRITICAL ALERT: Chest pain paired with breathlessness are clinical RED FLAGS indicating cardiac ischemia or severe respiratory failure. An emergency triage appointment with PHC On-call Medical Officer has been auto-escalated immediately.",
+            text: `🚨 CRITICAL: Your symptoms may require emergency care. Please call 108 (Ambulance) or go to your nearest hospital immediately.`,
             sources: [
               {
                 title: "WHO Emergency Triage Assessment & Treatment (ETAT)",

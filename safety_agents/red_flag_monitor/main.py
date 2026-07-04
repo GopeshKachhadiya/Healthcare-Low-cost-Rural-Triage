@@ -1,8 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from transformers import pipeline
-import warnings
-warnings.filterwarnings("ignore")
+import os
+import httpx
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 app = FastAPI(title="Red-Flag Monitor API", description="Safety Agent S1 for emergency detection")
 
@@ -10,9 +13,7 @@ class MonitorRequest(BaseModel):
     text_input: str
     source: str = "patient_chat"
 
-print("Loading pre-trained zero-shot classifier for emergency detection...")
-emergency_classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
-print("Model loaded.")
+print("Using Groq API for emergency detection...")
 
 @app.post("/scan")
 async def scan_for_red_flags(req: MonitorRequest):
@@ -23,10 +24,25 @@ async def scan_for_red_flags(req: MonitorRequest):
         hard_coded_flags = ["chest pain", "severe breathlessness", "convulsion", "uncontrolled bleeding", "facial droop", "suicide", "dying"]
         has_keyword = any(flag in query for flag in hard_coded_flags)
         
-        # NLP Zero-shot classification backup
-        candidate_labels = ["medical emergency", "routine inquiry"]
-        results = emergency_classifier(query, candidate_labels)
-        is_nlp_emergency = results['labels'][0] == "medical emergency" and results['scores'][0] > 0.8
+        # NLP classification via Groq API
+        is_nlp_emergency = False
+        if not has_keyword and GROQ_API_KEY:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+                    json={
+                        "model": "llama3-8b-8192",
+                        "messages": [
+                            {"role": "system", "content": "You are a medical triage system. Reply only with 'True' if the following text indicates a medical emergency, and 'False' otherwise."},
+                            {"role": "user", "content": query}
+                        ],
+                        "temperature": 0.0
+                    }
+                )
+                if resp.status_code == 200:
+                    reply = resp.json()['choices'][0]['message']['content'].strip().lower()
+                    is_nlp_emergency = 'true' in reply
         
         is_emergency = has_keyword or is_nlp_emergency
         
