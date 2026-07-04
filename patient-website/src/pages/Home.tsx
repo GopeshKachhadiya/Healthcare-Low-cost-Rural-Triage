@@ -3,42 +3,44 @@ import { Mic, Camera, MessageCircle, Clock, MapPin, CalendarCheck } from "lucide
 import PulseDivider from "../components/PulseDivider";
 import TierBadge from "../components/TierBadge";
 import { useApp } from "../context/AppContext";
-
-const QUICK_ACTIONS = [
-  {
-    to: "/scan",
-    icon: Camera,
-    title: "Scan a condition",
-    desc: "Photograph a skin, eye, or oral concern",
-  },
-  {
-    to: "/chat",
-    icon: MessageCircle,
-    title: "Ask ArogyaMitra",
-    desc: "Get answers grounded in medical guidelines",
-  },
-  {
-    to: "/find-hospital",
-    icon: MapPin,
-    title: "Find a hospital",
-    desc: "Nearest facility for your condition",
-  },
-  {
-    to: "/history",
-    icon: Clock,
-    title: "My history",
-    desc: "Past visits, screenings, prescriptions",
-  },
-  {
-    to: "/appointments",
-    icon: CalendarCheck,
-    title: "My appointments",
-    desc: "Track a booked or raised visit",
-  },
-];
+import { useTranslation } from "../hooks/useTranslation";
 
 export default function Home() {
   const { scans, appointments, user } = useApp();
+  const { t } = useTranslation();
+
+  const QUICK_ACTIONS = [
+    {
+      to: "/scan",
+      icon: Camera,
+      title: t("home.scan"),
+      desc: "Photograph a skin, eye, or oral concern",
+    },
+    {
+      to: "/chat",
+      icon: MessageCircle,
+      title: t("home.chat"),
+      desc: "Get answers grounded in medical guidelines",
+    },
+    {
+      to: "/find-hospital",
+      icon: MapPin,
+      title: t("home.findClinic"),
+      desc: "Nearest facility for your condition",
+    },
+    {
+      to: "/history",
+      icon: Clock,
+      title: t("home.history"),
+      desc: "Past visits, screenings, prescriptions",
+    },
+    {
+      to: "/appointments",
+      icon: CalendarCheck,
+      title: t("home.appointments"),
+      desc: "Track a booked or raised visit",
+    },
+  ];
 
   // Combine scans and appointments to get recent items
   const recentItems = [
@@ -63,10 +65,10 @@ export default function Home() {
       {/* ── Hero: voice is the largest, most prominent element ── */}
       <section className="mx-auto max-w-3xl px-5 pb-10 pt-14 text-center">
         <p className="font-display text-lg text-marigold-600">
-          {user ? `नमस्ते, ${user.name}` : "आपकी सेहत, आपकी भाषा में"}
+          {user ? `${t("home.welcome")}, ${user.name}` : t("home.subtitle")}
         </p>
         <h1 className="mt-3 font-display text-4xl font-semibold leading-tight text-teal-700 sm:text-5xl">
-          Your health friend, in your language
+          {t("home.subtitle")}
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-base text-ink/70">
           Speak your symptoms, scan a photo, or ask a question — ArogyaMitra
@@ -89,7 +91,7 @@ export default function Home() {
       {/* ── Quick actions — max 3 per row, per patient.md §15.1 ── */}
       <section className="mx-auto max-w-4xl px-5 py-12">
         <h2 className="mb-6 text-center font-display text-2xl font-semibold text-ink">
-          What would you like to do?
+          {t("home.quickActions")}
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {QUICK_ACTIONS.map(({ to, icon: Icon, title, desc }) => (

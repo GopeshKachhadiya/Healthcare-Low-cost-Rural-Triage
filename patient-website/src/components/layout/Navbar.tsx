@@ -1,12 +1,8 @@
 import { Link, NavLink } from "react-router-dom";
-import { Globe, LogOut, Activity, LayoutDashboard, Users, Map } from "lucide-react";
+import { LogOut, Activity, LayoutDashboard, Users, Map } from "lucide-react";
 import { useSession } from "../../hooks/useSession";
-
-const PATIENT_LINKS = [
-  { to: "/chat", label: "Ask" },
-  { to: "/history", label: "History" },
-  { to: "/find-hospital", label: "Find a hospital" },
-];
+import { useTranslation } from "../../hooks/useTranslation";
+import LanguageDropdown from "./LanguageDropdown";
 
 const STAFF_LINKS = [
   { to: "/hospital", label: "Triage Queue", icon: LayoutDashboard },
@@ -16,15 +12,22 @@ const STAFF_LINKS = [
 
 export default function Navbar() {
   const { user, logout } = useSession();
+  const { language, changeLanguage, t } = useTranslation();
   
   const isStaff = user?.role && user.role !== "patient";
+
+  const PATIENT_LINKS = [
+    { to: "/chat", label: t("home.chat") },
+    { to: "/history", label: t("home.history") },
+    { to: "/find-hospital", label: t("home.findClinic") },
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink/10 bg-paper/90 backdrop-blur">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-3">
         <Link to={isStaff ? "/hospital" : "/"} className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-500 font-display text-lg text-white">
-            {isStaff ? <Activity className="h-5 w-5" /> : "अ"}
+            {isStaff ? <Activity className="h-5 w-5" /> : "அ"}
           </span>
           <span className="font-display text-xl font-semibold text-teal-700">
             {isStaff ? "Hospital Panel" : "ArogyaMitra"}
@@ -64,15 +67,7 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
-          {!isStaff && (
-            <button
-              className="flex min-h-touch items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-ink/70 hover:text-teal-600"
-              aria-label="Change language"
-            >
-              <Globe className="h-5 w-5" />
-              <span className="hidden sm:inline">हिन्दी</span>
-            </button>
-          )}
+          {!isStaff && <LanguageDropdown />}
 
           {user ? (
             <div className="flex items-center gap-4 border-l border-ink/10 pl-4">

@@ -5,6 +5,7 @@ import { Camera, Image as ImageIcon, ShieldAlert, Sparkles, RefreshCw, UploadClo
 import PulseDivider from "../components/PulseDivider";
 import UploadDropzone from "../components/UploadDropzone";
 import { useCVScreening } from "../hooks/useCVScreening";
+import { useTranslation } from "../hooks/useTranslation";
 
 interface PresetCase {
   name: string;
@@ -51,12 +52,13 @@ const PRESET_CASES: PresetCase[] = [
     heatmap: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'><rect width='100%' height='100%' fill='%23000' opacity='0.25'/><circle cx='150' cy='150' r='60' fill='url(%23ge)'/><circle cx='250' cy='150' r='60' fill='url(%23ge)'/><defs><radialGradient id='ge'><stop offset='0%' stop-color='%23ffaa00' stop-opacity='0.9'/><stop offset='70%' stop-color='%23ffff00' stop-opacity='0.5'/><stop offset='100%' stop-color='%2300ff00' stop-opacity='0'/></defs></svg>",
     explanation: "Severe redness in the conjunctival sclera, indicative of viral or bacterial swelling. Highly infectious. Requires clinical review to differentiate and prescribe antibiotic eye drops.",
     recommendation: "Avoid touching or rubbing the eyes. Wash hands frequently. Do not share towels. Visit the clinic within 24-48 hours.",
-  }
+  },
 ];
 
 export default function Upload() {
   const navigate = useNavigate();
   const { isAnalyzing, currentStep, stepsText, runScreening } = useCVScreening();
+  const { t } = useTranslation();
 
   const [modality, setModality] = useState<Scan["modality"]>("skin_photo");
   const [selectedCase, setSelectedCase] = useState<PresetCase | null>(null);
@@ -132,7 +134,7 @@ export default function Upload() {
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-              <h1 className="font-display text-3xl font-bold text-teal-700">AI Visual Screening</h1>
+              <h1 className="font-display text-3xl font-bold text-teal-700">{t("scan.title")}</h1>
               <p className="text-sm text-ink/60">Photograph or select a lesion, rash, eye, or oral concern.</p>
             </div>
           </div>

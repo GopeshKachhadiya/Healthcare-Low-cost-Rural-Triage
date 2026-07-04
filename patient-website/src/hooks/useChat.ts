@@ -1,7 +1,7 @@
 import { useApp } from "../context/AppContext";
 
 export function useChat() {
-  const { chatHistory, addChatMessage, addAppointment, clearChat } = useApp();
+  const { chatHistory, addChatMessage, addAppointment, clearChat, user } = useApp();
 
   const isRedFlagActive = chatHistory.some((m) => m.isRedFlag);
 
@@ -11,12 +11,81 @@ export function useChat() {
     // Send user message
     addChatMessage(text, "user");
 
-    // Simulate network delay / RAG webhook call
+    try {
+      const response = await fetch("http://localhost:8000/route", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          patient_id: user?.phone || "+91 98765 43210",
+          action: "chat",
+          payload: { text },
+          language: user?.preferredLanguage || "hi",
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        if (result.status === "emergency") {
+          addChatMessage(
+            result.message,
+            "bot",
+            [
+              {
+                title: "Emergency Protocol (Agent S1)",
+                content: result.action_taken || "Immediate escalation to nearest PHC on-call team.",
+              },
+            ],
+            true
+          );
+
+          // Auto-escalate appointment
+          addAppointment({
+            doctorName: "Dr. Alok Sharma (PHC Medical Officer)",
+            facilityName: "Chandpur Primary Health Centre",
+            priority: "red",
+            reason: `Auto-escalation from Chatbot emergency trigger: ${text}`,
+          });
+          return;
+        }
+
+        if (result.status === "success" && result.route === "rag_chat") {
+          const ragData = result.data.data;
+          const formattedSources = (ragData.citations || []).map((source: string) => ({
+            title: source,
+            content: "Retrieved guideline passage from RAG corpus.",
+          }));
+
+          addChatMessage(
+            ragData.answer_text,
+            "bot",
+            formattedSources,
+            ragData.urgency_banner
+          );
+
+          if (ragData.urgency_banner) {
+            addAppointment({
+              doctorName: "Dr. Alok Sharma (PHC Medical Officer)",
+              facilityName: "Chandpur Primary Health Centre",
+              priority: "orange",
+              reason: `Auto-escalation from Chatbot symptom trigger: ${text}`,
+            });
+          }
+          return;
+        }
+      }
+    } catch (err) {
+      console.error("Failed to query Patient Orchestrator backend:", err);
+    }
+
+    // Fallback to local simulation if backend fails/is offline
     return new Promise<void>((resolve) => {
       setTimeout(() => {
         let selectedIntent = "disease";
         const lower = text.toLowerCase();
-        
+
         if (lower.includes("paracetamol") || lower.includes("medicine")) {
           selectedIntent = "medicine";
         } else if (

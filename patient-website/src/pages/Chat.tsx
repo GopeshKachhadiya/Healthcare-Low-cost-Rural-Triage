@@ -6,6 +6,7 @@ import VoiceInputButton from "../components/VoiceInputButton";
 import SourcesPanel from "../components/SourcesPanel";
 import { useChat } from "../hooks/useChat";
 import { useVoiceInput } from "../hooks/useVoiceInput";
+import { useTranslation } from "../hooks/useTranslation";
 
 const STANDARD_QUESTIONS = [
   { text: "What is diabetes? / मधुमेह क्या है?", intent: "disease" },
@@ -16,6 +17,7 @@ const STANDARD_QUESTIONS = [
 export default function Chat() {
   const { chatHistory, sendMessage, clearChat } = useChat();
   const { isRecording, startRecording, stopRecording } = useVoiceInput();
+  const { t } = useTranslation();
   const [inputText, setInputText] = useState("");
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
 
@@ -73,7 +75,7 @@ export default function Chat() {
           <div>
             <h1 className="font-display text-2xl font-bold text-teal-700 flex items-center gap-2">
               <MessageCircle className="h-6 w-6" />
-              Ask ArogyaMitra
+              {t("chat.title")}
             </h1>
             <p className="text-xs text-ink/50 mt-0.5">
               RAG-grounded support in regional languages. All answers cited.
@@ -205,8 +207,8 @@ export default function Chat() {
             type="text"
             placeholder={
               isRecording
-                ? "Listening..."
-                : "Type symptoms or medicines (e.g. Fever, Paracetamol)..."
+                ? t("chat.recording")
+                : t("chat.placeholder")
             }
             disabled={isRecording}
             value={inputText}

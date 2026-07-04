@@ -56,7 +56,7 @@ export const STEPS_TEXT = [
 ];
 
 export function useCVScreening() {
-  const { addScan, addAppointment } = useApp();
+  const { addScan, addAppointment, user } = useApp();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -98,6 +98,34 @@ export function useCVScreening() {
 
         // Decode top class string to full clinical diagnostic details using P3 Result Interpreter Agent
         const interpretation = interpretClassification(apiResponse.condition, apiResponse.confidence);
+
+        // Call Patient Orchestrator Route to log CV result & auto-escalate if Red/Orange
+        try {
+          const routeAction = modality === "skin_photo" ? "screen_skin" : modality === "eye" ? "screen_eye" : "screen_oral";
+          await fetch("http://localhost:8000/route", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              patient_id: user?.phone || "+91 98765 43210",
+              action: routeAction,
+              payload: {
+                cv_result: {
+                  condition: interpretation.conditionName,
+                  confidence: interpretation.confidence,
+                  tier: interpretation.tier,
+                },
+                nearest_hospital_id: interpretation.tier === "red"
+                  ? "District Referral Hospital"
+                  : "Chandpur Primary Health Centre",
+              },
+              language: user?.preferredLanguage || "hi",
+            }),
+          });
+        } catch (routeErr) {
+          console.error("Orchestrator failed to route CV result:", routeErr);
+        }
 
         const scanId = addScan({
           modality: modality,

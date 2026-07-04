@@ -7,24 +7,18 @@ import { Calendar, PlusCircle, ArrowRight, ArrowLeft, Video, AlertTriangle } fro
 import { useAppointments } from "../hooks/useAppointments";
 
 export default function Appointments() {
-  const { appointments, activeAppointments, pastAppointments, addAppointment } = useAppointments();
+  const { appointments, activeAppointments, pastAppointments, bookNewAppointment, isBooking } = useAppointments();
   const [activeTab, setActiveTab] = useState<"active" | "past">("active");
-  const [booking, setBooking] = useState(false);
 
   const displayApts = activeTab === "active" ? activeAppointments : pastAppointments;
 
-
-  const handleBookMock = () => {
-    setBooking(true);
-    setTimeout(() => {
-      addAppointment({
-        doctorName: "Dr. Alok Sharma (PHC Medical Officer)",
-        facilityName: "Chandpur Primary Health Centre",
-        priority: "green",
-        reason: "General wellness checkup and seasonal allergy consult.",
-      });
-      setBooking(false);
-    }, 1000);
+  const handleBook = async () => {
+    await bookNewAppointment(
+      "Dr. Alok Sharma (PHC Medical Officer)",
+      "Chandpur Primary Health Centre",
+      "green",
+      "General wellness checkup and seasonal allergy consult."
+    );
   };
 
   const getStatusStyle = (status: Appointment["status"]) => {
@@ -34,7 +28,7 @@ export default function Appointments() {
       case "accepted":
         return "bg-teal-50 text-teal-700 border-teal-200/50";
       case "in_consultation":
-        return "bg-teal-500 text-white border-teal-500 animate-pulse";
+        return "bg-teal-505 text-white border-teal-505 animate-pulse";
       case "completed":
         return "bg-tier-green-bg text-tier-green border-tier-green/20";
       case "cancelled":
@@ -61,12 +55,12 @@ export default function Appointments() {
           </div>
         </div>
         <button
-          onClick={handleBookMock}
-          disabled={booking}
+          onClick={handleBook}
+          disabled={isBooking}
           className="flex min-h-touch items-center justify-center gap-1.5 rounded-lg bg-teal-500 px-5 text-sm font-semibold text-white hover:bg-teal-600 transition-all shadow-md shadow-teal-500/10 disabled:opacity-50 shrink-0"
         >
           <PlusCircle className="h-4 w-4" />
-          {booking ? "Scheduling..." : "Book Consultation"}
+          {isBooking ? "Scheduling..." : "Book Consultation"}
         </button>
       </div>
 

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { UploadCloud, FileImage, AlertCircle } from "lucide-react";
+import { useTranslation } from "../hooks/useTranslation";
 
 interface UploadDropzoneProps {
   onFileSelected: (file: File) => void;
@@ -17,6 +18,7 @@ export default function UploadDropzone({
   const [isDragActive, setIsDragActive] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   const validateFile = (file: File): boolean => {
     if (!acceptedTypes.includes(file.type)) {
@@ -91,7 +93,7 @@ export default function UploadDropzone({
         isDragActive ? "text-teal-600" : "text-teal-500/70"
       }`} />
 
-      <h3 className="mt-4 text-base font-semibold text-ink">Upload Condition Scan</h3>
+      <h3 className="mt-4 text-base font-semibold text-ink">{t("scan.select")}</h3>
       <p className="mt-1 text-xs text-ink/50 max-w-xs">
         Drag and drop your photo here, or click the button below to pick from your camera roll.
       </p>
