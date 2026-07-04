@@ -21,10 +21,13 @@ print("Loading local YOLOv8 Segmentation model...")
 try:
     # Use the local model provided by the user
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(current_dir, "best braintrumor (9).pt")
-    
+    model_path = os.path.join(current_dir, "../../models/brain%20Tumor.pt")
     if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Model file not found at: {model_path}")
+        model_path = os.path.join(current_dir, "../../models/brain Tumor.pt")
+    if not os.path.exists(model_path):
+        model_path = os.path.join(current_dir, "best braintrumor (9).pt")
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Model file not found at: {model_path}")
         
     model = YOLO(model_path)
     print("Local model loaded successfully.")

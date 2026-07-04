@@ -5,7 +5,7 @@ export function useChat() {
 
   const isRedFlagActive = chatHistory.some((m) => m.isRedFlag);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, condition?: string) => {
     if (!text.trim()) return;
 
     // Send user message
@@ -23,6 +23,7 @@ export function useChat() {
           action: "chat",
           payload: { 
             text,
+            condition,
             history: chatHistory.map(m => ({
               role: m.sender === "bot" ? "assistant" : "user",
               content: m.text

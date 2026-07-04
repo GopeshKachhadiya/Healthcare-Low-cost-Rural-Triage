@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import TierBadge from "../components/TierBadge";
 import PulseDivider from "../components/PulseDivider";
-import { ShieldCheck, Calendar, ArrowLeft, BookOpen, AlertTriangle, FileText } from "lucide-react";
+import { ShieldCheck, Calendar, ArrowLeft, BookOpen, AlertTriangle, FileText, MessageCircle } from "lucide-react";
 import GradCamOverlay from "../components/GradCamOverlay";
 
 export default function ScreeningResult() {
@@ -122,6 +122,23 @@ export default function ScreeningResult() {
               Care Recommendation
             </h3>
             <p className="text-sm text-ink/80 leading-relaxed">{scan.recommendation}</p>
+          </div>
+
+          {/* Chat about condition assistant */}
+          <div className="rounded-xl border border-teal-500/20 bg-teal-50/30 p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+            <div className="leading-tight">
+              <h4 className="font-semibold text-teal-700 text-sm flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-teal-600" />
+                Have questions about {scan.condition}?
+              </h4>
+              <p className="text-xs text-ink/60 mt-1">Discuss this result, understand precautions, and ask questions to our AI assistant.</p>
+            </div>
+            <Link
+              to={`/chat?condition=${encodeURIComponent(scan.condition)}`}
+              className="flex min-h-touch items-center gap-1.5 rounded-lg bg-teal-500 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-600 transition-colors shrink-0"
+            >
+              Chat about condition
+            </Link>
           </div>
 
           {/* Dynamic Referral/Appointment widget */}

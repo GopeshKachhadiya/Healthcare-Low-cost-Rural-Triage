@@ -21,7 +21,13 @@ app.add_middleware(
 print("Downloading and loading YOLOv8 Brain Tumor model from Hugging Face...")
 os.makedirs("models", exist_ok=True)
 
-local_path = r"E:\Maverick2026\models\best braintrumor (9).pt"
+local_dir = os.path.dirname(os.path.abspath(__file__))
+local_path = os.path.join(local_dir, "../../models/brain%20Tumor.pt")
+if not os.path.exists(local_path):
+    local_path = os.path.join(local_dir, "../../models/brain Tumor.pt")
+if not os.path.exists(local_path):
+    local_path = r"E:\Maverick2026\models\best braintrumor (9).pt"
+
 if os.path.exists(local_path):
     try:
         model = YOLO(local_path)

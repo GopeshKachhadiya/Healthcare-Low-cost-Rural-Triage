@@ -5,6 +5,20 @@ import os
 from PIL import Image
 from ultralytics import YOLO
 from huggingface_hub import hf_hub_download
+from dotenv import load_dotenv
+import httpx
+
+# Try loading .env
+for env_path in [
+    os.path.join(os.path.dirname(__file__), '../../.env'),
+    os.path.join(os.getcwd(), '.env'),
+    '.env'
+]:
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+        break
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -27,9 +41,9 @@ def load_model(repo_id, key):
     # Check for local models first
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     local_paths = {
-        "skin": os.path.join(BASE_DIR, "skin deseases.pt") if os.path.exists(os.path.join(BASE_DIR, "skin deseases.pt")) else r"C:\Users\Herry\Downloads\skin%20deseases.pt",
-        "eye": r"E:\Maverick2026\models\skin deseases.pt" if os.path.exists(r"E:\Maverick2026\models\skin deseases.pt") else r"C:\Users\Herry\Downloads\skin%20deseases.pt",
-        "oral": r"E:\Maverick2026\models\skin deseases.pt" if os.path.exists(r"E:\Maverick2026\models\skin deseases.pt") else r"C:\Users\Herry\Downloads\skin%20deseases.pt"
+        "skin": os.path.join(BASE_DIR, "../../models/skin_disease_model.pt"),
+        "eye": os.path.join(BASE_DIR, "../../models/skin_disease_model.pt"),
+        "oral": os.path.join(BASE_DIR, "../../models/skin_disease_model.pt")
     }
     
     local_path = local_paths.get(key)
@@ -125,6 +139,42 @@ SUMMARY_REGISTRY = {
     "normal": "Healthy presentation. No visual signs of skin lesions, redness, or abnormalities.",
 }
 
+async def get_dynamic_summary(scan_type: str, top_class: str, confidence: float) -> str:
+    if GROQ_API_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+                    json={
+                        "model": "llama-3.1-8b-instant",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": (
+                                    "You are ArogyaMitra, an AI medical screener. A patient has undergone a "
+                                    f"{scan_type} screening scan. The computer vision model classified this as "
+                                    f"'{top_class}' with {confidence * 100}% confidence.\n\n"
+                                    "Provide a brief, professional, and empathetic clinical explanation "
+                                    "of this condition, its potential causes in low-resource settings, and "
+                                    "suggest standard precautions. Do NOT prescribe specific medications. "
+                                    "Keep it under 3-4 sentences."
+                                )
+                            }
+                        ],
+                        "temperature": 0.3,
+                        "max_tokens": 150
+                    }
+                )
+                if resp.status_code == 200:
+                    return resp.json()['choices'][0]['message']['content'].strip()
+        except Exception as llm_err:
+            print(f"Groq summary generation failed: {llm_err}")
+            
+    # Fallback registry lookup
+    normalized = normalize_class(top_class)
+    return SUMMARY_REGISTRY.get(normalized, f"Detected: {top_class}. Visual indicators checked.")
+
 @app.post("/predict")
 async def predict(file: UploadFile = File(...), scan_type: str = Form("skin")):
     """
@@ -143,8 +193,7 @@ async def predict(file: UploadFile = File(...), scan_type: str = Form("skin")):
         if model_to_use is None:
             # Fallback mock response if HF download failed
             mock_class = "melanoma" if scan_type == "skin" else "cataract" if scan_type == "eye" else "oscc"
-            normalized = normalize_class(mock_class)
-            summary = SUMMARY_REGISTRY.get(normalized, "No specific clinical information available for this condition.")
+            summary = await get_dynamic_summary(scan_type, mock_class, 0.85)
                     
             return JSONResponse(content={
                 "scan_type": scan_type,
@@ -168,8 +217,7 @@ async def predict(file: UploadFile = File(...), scan_type: str = Form("skin")):
         top_class = names[top_idx]
         confidence = round(result.probs.top1conf.item(), 4)
         
-        normalized = normalize_class(top_class)
-        summary = SUMMARY_REGISTRY.get(normalized, f"Detected: {top_class}. Visual indicators checked.")
+        summary = await get_dynamic_summary(scan_type, top_class, confidence)
         
         response = {
             "scan_type": scan_type,

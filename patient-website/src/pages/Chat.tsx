@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { MessageCircle, Send, Volume2, ShieldAlert, Sparkles, Trash2, ArrowLeft } from "lucide-react";
 import PulseDivider from "../components/PulseDivider";
 import VoiceInputButton from "../components/VoiceInputButton";
@@ -7,6 +7,7 @@ import SourcesPanel from "../components/SourcesPanel";
 import { useChat } from "../hooks/useChat";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import { useTranslation } from "../hooks/useTranslation";
+import { useApp } from "../context/AppContext";
 
 const STANDARD_QUESTIONS = [
   { text: "What is diabetes? / मधुमेह क्या है?", intent: "disease" },
@@ -15,6 +16,10 @@ const STANDARD_QUESTIONS = [
 ];
 
 export default function Chat() {
+  const [searchParams] = useSearchParams();
+  const condition = searchParams.get("condition");
+  const { addChatMessage } = useApp();
+
   const { chatHistory, sendMessage, clearChat } = useChat();
   const { isRecording, startRecording, stopRecording } = useVoiceInput();
   const { t } = useTranslation();
@@ -25,12 +30,21 @@ export default function Chat() {
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
+    if (condition && chatHistory.length === 0) {
+      addChatMessage(
+        `Hello! I see you want to discuss your scan result indicating possible '${condition}'. I can answer any questions you have about this condition, precautions you should take, or next steps. How can I help you today?`,
+        "bot"
+      );
+    }
+  }, [condition, chatHistory.length, addChatMessage]);
+
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
 
   const handleSend = (text: string) => {
     if (!text.trim()) return;
-    sendMessage(text);
+    sendMessage(text, condition || undefined);
     setInputText("");
   };
 
@@ -38,12 +52,12 @@ export default function Chat() {
     if (isRecording) {
       if (timerRef.current) clearTimeout(timerRef.current);
       const text = await stopRecording();
-      if (text) sendMessage(text);
+      if (text) sendMessage(text, condition || undefined);
     } else {
       startRecording();
       timerRef.current = setTimeout(async () => {
         const text = await stopRecording();
-        if (text) sendMessage(text);
+        if (text) sendMessage(text, condition || undefined);
       }, 3000);
     }
   };
@@ -108,7 +122,14 @@ export default function Chat() {
             </div>
             <div className="w-full space-y-2 text-left">
               <p className="text-xs font-semibold text-ink/40 uppercase tracking-wider">Try asking:</p>
-              {STANDARD_QUESTIONS.map((q, idx) => (
+              {(condition 
+                ? [
+                    { text: `What precautions should I take for ${condition}?` },
+                    { text: `What are the typical symptoms of ${condition}?` },
+                    { text: `Is ${condition} dangerous or contagious?` }
+                  ]
+                : STANDARD_QUESTIONS
+              ).map((q, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSend(q.text)}
