@@ -135,7 +135,8 @@ export function useCVScreening() {
           confidence: interpretation.confidence,
           tier: interpretation.tier,
           explanation: interpretation.explanation,
-          recommendation: interpretation.recommendation,
+          recommendation: apiResponse.recommendation || interpretation.recommendation,
+          summary: apiResponse.explanation,
         });
 
         // Auto-schedule referral appointment if it is Red or Orange tier

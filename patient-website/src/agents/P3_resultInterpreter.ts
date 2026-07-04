@@ -253,6 +253,18 @@ const CONDITION_REGISTRY: Record<
     explanation: "Inflammation or infection of the outer membrane of the eyeball. Highly contagious.",
     recommendation: "Do not touch or rub eyes. Wash hands frequently. Visit local health worker for antibiotic eye drops.",
   },
+  cataract: {
+    name: "Cataract Risk",
+    tier: "orange",
+    explanation: "Clouding of the lens in the eye, which leads to a decrease in vision. Common in older adults.",
+    recommendation: "Please schedule an ophthalmic examination at the CHC/District Hospital for definitive evaluation.",
+  },
+  normal: {
+    name: "Normal Scan",
+    tier: "green",
+    explanation: "The visual screening found no signs of skin lesions, redness, or abnormalities.",
+    recommendation: "Healthy presentation. Continue standard hygiene. If symptoms develop, perform a new scan.",
+  },
 };
 
 function normalizeClassLabel(label: string): string {
@@ -273,6 +285,9 @@ function normalizeClassLabel(label: string): string {
   if (clean.includes("warts") || clean.includes("viral")) return "warts molluscum and other viral infections";
   if (clean.includes("urticaria") || clean.includes("hives")) return "urticaria hives";
   if (clean.includes("alopecia") || clean.includes("hair")) return "hair loss photos alopecia and other hair diseases";
+  if (clean.includes("psoriasis")) return "psoriasis pictures lichen planus and related diseases";
+  if (clean.includes("cataract")) return "cataract";
+  if (clean.includes("normal")) return "normal";
   
   return clean;
 }

@@ -13,6 +13,7 @@ export interface Scan {
   explanation: string;
   recommendation: string;
   recordedAt: string;
+  summary?: string;
 }
 
 export interface Appointment {

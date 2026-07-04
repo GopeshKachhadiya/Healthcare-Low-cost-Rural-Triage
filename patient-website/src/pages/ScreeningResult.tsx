@@ -91,6 +91,17 @@ export default function ScreeningResult() {
 
         {/* Right Column: RAG grounded description & recommendations */}
         <div className="md:col-span-7 space-y-6">
+          {/* AI Diagnostic Summary */}
+          {scan.summary && (
+            <div className="rounded-xl border border-teal-500/20 bg-teal-50/10 p-6 shadow-sm space-y-4">
+              <h3 className="flex items-center gap-2 font-display text-lg font-bold text-teal-700">
+                <ShieldCheck className="h-5 w-5 text-teal-600" />
+                AI Diagnostic Summary
+              </h3>
+              <p className="text-sm text-ink/80 leading-relaxed font-semibold">{scan.summary}</p>
+            </div>
+          )}
+
           {/* Grounded Description */}
           <div className="rounded-xl border border-ink/10 bg-white p-6 shadow-sm space-y-4">
             <h3 className="flex items-center gap-2 font-display text-lg font-bold text-teal-700">

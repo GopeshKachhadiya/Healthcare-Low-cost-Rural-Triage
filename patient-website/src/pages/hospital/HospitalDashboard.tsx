@@ -654,14 +654,77 @@ export default function HospitalDashboard() {
                       <div className="mt-4 flex gap-4">
                         <div className="flex-1 aspect-video bg-ink/15 rounded-lg flex items-center justify-center text-ink/40 text-xs font-bold border border-ink/20 relative overflow-hidden">
                           {cvScreening.modality === 'skin' ? (
-                            <div className="absolute inset-0 flex items-center justify-center text-[10px] bg-red-100 text-red-700 uppercase font-extrabold">Skin Lesion Raw</div>
+                            <svg className="w-full h-full object-cover" viewBox="0 0 200 150">
+                              <rect width="200" height="150" fill="#e2ccb8"/>
+                              <circle cx="90" cy="70" r="27" fill="#ab4747" opacity="0.7"/>
+                              <circle cx="105" cy="80" r="22" fill="#9e3d3d" opacity="0.8"/>
+                            </svg>
+                          ) : cvScreening.modality === 'brain_mri' ? (
+                            <svg className="w-full h-full object-cover" viewBox="0 0 200 150">
+                              <rect width="200" height="150" fill="#111827"/>
+                              <ellipse cx="100" cy="75" rx="60" ry="50" fill="none" stroke="#4b5563" strokeWidth="3"/>
+                              <path d="M 100,28 C 70,35 60,60 60,75 C 60,95 75,120 100,122 C 125,120 140,95 140,75 C 140,60 130,35 100,28 Z" fill="#374151" opacity="0.7"/>
+                              <path d="M 80,75 Q 90,65 100,75 T 120,75" fill="none" stroke="#1f2937" strokeWidth="2"/>
+                              <circle cx="90" cy="65" r="10" fill="#ef4444" opacity="0.6"/>
+                            </svg>
                           ) : (
-                            "Original Scan"
+                            <svg className="w-full h-full object-cover" viewBox="0 0 200 150">
+                              <rect width="200" height="150" fill="#1f2937"/>
+                              <line x1="100" y1="10" x2="100" y2="140" stroke="#4b5563" strokeWidth="6" strokeDasharray="5,3"/>
+                              <path d="M 75,30 C 50,40 50,110 75,115 Z" fill="#111827" opacity="0.8"/>
+                              <path d="M 125,30 C 150,40 150,110 125,115 Z" fill="#111827" opacity="0.8"/>
+                              <circle cx="65" cy="75" r="12" fill="#e5e7eb" opacity="0.6"/>
+                            </svg>
                           )}
                         </div>
                         <div className="flex-1 aspect-video bg-ink/10 rounded-lg flex items-center justify-center text-ink/40 text-xs font-bold border border-ink/20 relative overflow-hidden">
-                          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-red-500/30 to-yellow-500/40 mix-blend-multiply"></div>
-                          AI Heatmap Overlay
+                          {cvScreening.modality === 'skin' ? (
+                            <svg className="w-full h-full object-cover" viewBox="0 0 200 150">
+                              <rect width="200" height="150" fill="#e2ccb8"/>
+                              <circle cx="90" cy="70" r="27" fill="#ab4747" opacity="0.7"/>
+                              <circle cx="105" cy="80" r="22" fill="#9e3d3d" opacity="0.8"/>
+                              <circle cx="98" cy="75" r="35" fill="url(#heatGrad1)" opacity="0.6"/>
+                              <defs>
+                                <radialGradient id="heatGrad1">
+                                  <stop offset="0%" stop-color="#ff0000"/>
+                                  <stop offset="60%" stop-color="#ffff00"/>
+                                  <stop offset="100%" stop-color="#00ff00" stop-opacity="0"/>
+                                </radialGradient>
+                              </defs>
+                            </svg>
+                          ) : cvScreening.modality === 'brain_mri' ? (
+                            <svg className="w-full h-full object-cover" viewBox="0 0 200 150">
+                              <rect width="200" height="150" fill="#111827"/>
+                              <ellipse cx="100" cy="75" rx="60" ry="50" fill="none" stroke="#4b5563" strokeWidth="3"/>
+                              <path d="M 100,28 C 70,35 60,60 60,75 C 60,95 75,120 100,122 C 125,120 140,95 140,75 C 140,60 130,35 100,28 Z" fill="#374151" opacity="0.7"/>
+                              <path d="M 80,75 Q 90,65 100,75 T 120,75" fill="none" stroke="#1f2937" strokeWidth="2"/>
+                              <circle cx="90" cy="65" r="10" fill="#ef4444" opacity="0.6"/>
+                              <circle cx="90" cy="65" r="18" fill="url(#heatGrad1)" opacity="0.8"/>
+                              <defs>
+                                <radialGradient id="heatGrad1">
+                                  <stop offset="0%" stop-color="#ff0000"/>
+                                  <stop offset="60%" stop-color="#ffff00"/>
+                                  <stop offset="100%" stop-color="#00ff00" stop-opacity="0"/>
+                                </radialGradient>
+                              </defs>
+                            </svg>
+                          ) : (
+                            <svg className="w-full h-full object-cover" viewBox="0 0 200 150">
+                              <rect width="200" height="150" fill="#1f2937"/>
+                              <line x1="100" y1="10" x2="100" y2="140" stroke="#4b5563" strokeWidth="6" strokeDasharray="5,3"/>
+                              <path d="M 75,30 C 50,40 50,110 75,115 Z" fill="#111827" opacity="0.8"/>
+                              <path d="M 125,30 C 150,40 150,110 125,115 Z" fill="#111827" opacity="0.8"/>
+                              <circle cx="65" cy="75" r="12" fill="#e5e7eb" opacity="0.6"/>
+                              <circle cx="65" cy="75" r="20" fill="url(#heatGrad1)" opacity="0.7"/>
+                              <defs>
+                                <radialGradient id="heatGrad1">
+                                  <stop offset="0%" stop-color="#ff0000"/>
+                                  <stop offset="60%" stop-color="#ffff00"/>
+                                  <stop offset="100%" stop-color="#00ff00" stop-opacity="0"/>
+                                </radialGradient>
+                              </defs>
+                            </svg>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -734,12 +797,59 @@ export default function HospitalDashboard() {
 
                       {/* Display original & mock heatmap */}
                       <div className="flex gap-3">
-                        <div className="flex-1 aspect-video bg-ink/10 rounded-lg flex items-center justify-center text-xs font-bold text-ink/40 border">
-                          Original Slice
+                        <div className="flex-1 aspect-video bg-ink/10 rounded-lg flex items-center justify-center text-xs font-bold text-ink/40 border overflow-hidden">
+                          {selectedModality === "mri" ? (
+                            <svg className="w-full h-full object-cover" viewBox="0 0 200 150">
+                              <rect width="200" height="150" fill="#111827"/>
+                              <ellipse cx="100" cy="75" rx="60" ry="50" fill="none" stroke="#4b5563" strokeWidth="3"/>
+                              <path d="M 100,28 C 70,35 60,60 60,75 C 60,95 75,120 100,122 C 125,120 140,95 140,75 C 140,60 130,35 100,28 Z" fill="#374151" opacity="0.7"/>
+                              <path d="M 80,75 Q 90,65 100,75 T 120,75" fill="none" stroke="#1f2937" strokeWidth="2"/>
+                              <circle cx="90" cy="65" r="10" fill="#ef4444" opacity="0.6"/>
+                            </svg>
+                          ) : (
+                            <svg className="w-full h-full object-cover" viewBox="0 0 200 150">
+                              <rect width="200" height="150" fill="#1f2937"/>
+                              <line x1="100" y1="10" x2="100" y2="140" stroke="#4b5563" strokeWidth="6" strokeDasharray="5,3"/>
+                              <path d="M 75,30 C 50,40 50,110 75,115 Z" fill="#111827" opacity="0.8"/>
+                              <path d="M 125,30 C 150,40 150,110 125,115 Z" fill="#111827" opacity="0.8"/>
+                              <circle cx="65" cy="75" r="12" fill="#e5e7eb" opacity="0.6"/>
+                            </svg>
+                          )}
                         </div>
                         <div className="flex-1 aspect-video bg-ink/10 rounded-lg flex items-center justify-center text-xs font-bold text-ink/40 border relative overflow-hidden">
-                          <div className="absolute inset-0 bg-radial-gradient from-red-500/50 via-yellow-500/30 to-transparent"></div>
-                          Segmentation Overlay
+                          {selectedModality === "mri" ? (
+                            <svg className="w-full h-full object-cover" viewBox="0 0 200 150">
+                              <rect width="200" height="150" fill="#111827"/>
+                              <ellipse cx="100" cy="75" rx="60" ry="50" fill="none" stroke="#4b5563" strokeWidth="3"/>
+                              <path d="M 100,28 C 70,35 60,60 60,75 C 60,95 75,120 100,122 C 125,120 140,95 140,75 C 140,60 130,35 100,28 Z" fill="#374151" opacity="0.7"/>
+                              <path d="M 80,75 Q 90,65 100,75 T 120,75" fill="none" stroke="#1f2937" strokeWidth="2"/>
+                              <circle cx="90" cy="65" r="10" fill="#ef4444" opacity="0.6"/>
+                              <circle cx="90" cy="65" r="18" fill="url(#heatGrad2)" opacity="0.8"/>
+                              <defs>
+                                <radialGradient id="heatGrad2">
+                                  <stop offset="0%" stop-color="#ff0000"/>
+                                  <stop offset="60%" stop-color="#ffff00"/>
+                                  <stop offset="100%" stop-color="#00ff00" stop-opacity="0"/>
+                                </radialGradient>
+                              </defs>
+                            </svg>
+                          ) : (
+                            <svg className="w-full h-full object-cover" viewBox="0 0 200 150">
+                              <rect width="200" height="150" fill="#1f2937"/>
+                              <line x1="100" y1="10" x2="100" y2="140" stroke="#4b5563" strokeWidth="6" strokeDasharray="5,3"/>
+                              <path d="M 75,30 C 50,40 50,110 75,115 Z" fill="#111827" opacity="0.8"/>
+                              <path d="M 125,30 C 150,40 150,110 125,115 Z" fill="#111827" opacity="0.8"/>
+                              <circle cx="65" cy="75" r="12" fill="#e5e7eb" opacity="0.6"/>
+                              <circle cx="65" cy="75" r="20" fill="url(#heatGrad2)" opacity="0.7"/>
+                              <defs>
+                                <radialGradient id="heatGrad2">
+                                  <stop offset="0%" stop-color="#ff0000"/>
+                                  <stop offset="60%" stop-color="#ffff00"/>
+                                  <stop offset="100%" stop-color="#00ff00" stop-opacity="0"/>
+                                </radialGradient>
+                              </defs>
+                            </svg>
+                          )}
                         </div>
                       </div>
 

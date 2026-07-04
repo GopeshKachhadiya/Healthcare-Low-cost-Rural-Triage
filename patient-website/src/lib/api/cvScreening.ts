@@ -45,7 +45,7 @@ export async function uploadImageAndScreen(
       confidence: data.confidence || 0.85,
       tier: tier,
       heatmapUrl: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'><rect width='100%' height='100%' fill='%23000' opacity='0.25'/><circle cx='200' cy='150' r='70' fill='url(%23g)'/><defs><radialGradient id='g'><stop offset='0%' stop-color='%23ff0000' stop-opacity='0.9'/><stop offset='60%' stop-color='%23ffff00' stop-opacity='0.5'/><stop offset='100%' stop-color='%2300ff00' stop-opacity='0'/></defs></svg>",
-      explanation: `Analysis completed using locally loaded machine learning model for ${scanType.toUpperCase()} targets.`,
+      explanation: data.summary || `Analysis completed using locally loaded machine learning model for ${scanType.toUpperCase()} targets.`,
       recommendation: tier === "red" 
         ? "Immediate doctor consultation recommended. Do not attempt self-medication." 
         : "Wash with clean running water. Monitor symptoms and visit PHC if concern persists.",
