@@ -164,7 +164,41 @@ export default function Chat() {
                       <span>CRITICAL DETECTED</span>
                     </div>
                   )}
-                  <p>{msg.text}</p>
+                  {/* Render markdown in bot messages, plain text in user messages */}
+                  {isUser ? (
+                    <p>{msg.text}</p>
+                  ) : (
+                    <div className="space-y-2 text-sm leading-relaxed">
+                      {msg.text.split("\n\n").map((block, bi) => {
+                        if (block.trim() === "---") {
+                          return <hr key={bi} className="border-ink/10 my-2" />;
+                        }
+                        const lines = block.split("\n");
+                        const isBulletBlock = lines.some(l => l.trim().startsWith("- ") || l.trim().startsWith("* ") || /^\d+\.\s/.test(l.trim()));
+                        if (isBulletBlock) {
+                          return (
+                            <ul key={bi} className="space-y-1 pl-1">
+                              {lines.map((line, li) => {
+                                const cleaned = line.replace(/^[-*]\s+/, "").replace(/^\d+\.\s+/, "");
+                                const isItem = /^[-*]\s/.test(line.trim()) || /^\d+\.\s/.test(line.trim());
+                                return isItem ? (
+                                  <li key={li} className="flex items-start gap-1.5">
+                                    <span className="text-teal-500 mt-0.5 shrink-0">•</span>
+                                    <span dangerouslySetInnerHTML={{ __html: cleaned.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>") }} />
+                                  </li>
+                                ) : (
+                                  <p key={li} className="text-ink/80" dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>") }} />
+                                );
+                              })}
+                            </ul>
+                          );
+                        }
+                        return (
+                          <p key={bi} dangerouslySetInnerHTML={{ __html: block.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>").replace(/\n/g, "<br/>") }} />
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {/* Bot helper actions (audio check) */}
                   {!isUser && (

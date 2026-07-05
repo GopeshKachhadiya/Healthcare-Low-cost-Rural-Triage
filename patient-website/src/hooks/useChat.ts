@@ -12,6 +12,12 @@ export function useChat() {
     addChatMessage(text, "user");
 
     let fetchErrorMsg = "";
+    // Auto-detect language from what the user actually typed
+    // If they type in Gujarati/Hindi script → regional language; otherwise → English
+    const hasGujarati = /[\u0A80-\u0AFF]/.test(text);
+    const hasHindi    = /[\u0900-\u097F]/.test(text);
+    const effectiveLang = hasGujarati ? "gu" : hasHindi ? "hi" : "en";
+
     try {
       const response = await fetch("http://127.0.0.1:9000/route", {
         method: "POST",
@@ -29,7 +35,7 @@ export function useChat() {
               content: m.text
             }))
           },
-          language: user?.preferredLanguage || "hi",
+          language: effectiveLang,
         }),
       });
 

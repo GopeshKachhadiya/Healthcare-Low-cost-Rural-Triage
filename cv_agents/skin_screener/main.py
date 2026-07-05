@@ -41,7 +41,7 @@ def load_model(repo_id, key):
     # Check for local models first
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     local_paths = {
-        "skin": os.path.join(BASE_DIR, "../../models/skin_disease_model.pt"),
+        "skin": os.path.join(BASE_DIR, "skin_disease_model.pt"),
         "eye": os.path.join(BASE_DIR, "../../models/skin_disease_model.pt"),
         "oral": os.path.join(BASE_DIR, "../../models/skin_disease_model.pt")
     }
