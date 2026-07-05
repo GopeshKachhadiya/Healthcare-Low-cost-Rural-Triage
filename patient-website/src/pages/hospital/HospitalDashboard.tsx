@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { 
   ChevronRight, Activity, X, User, Calendar, MapPin, Search, 
@@ -9,6 +9,7 @@ import {
   MOCK_DB, getCasesByTier, formatTimeAgo, getPatient, 
   getVitals, getCVScreening, getHistory, getTierLabel 
 } from "../../lib/hospitalData";
+import { supabase } from "../../lib/supabaseClient";
 import TierBadge from "../../components/TierBadge";
 import PulseDivider from "../../components/PulseDivider";
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
@@ -62,6 +63,51 @@ export default function HospitalDashboard() {
 
   // --- Search state ---
   const [patientSearch, setPatientSearch] = useState("");
+
+  // --- Real Supabase Data ---
+  const [realChatMessages, setRealChatMessages] = useState<any[]>([]);
+  const [realCareAdvice, setRealCareAdvice] = useState<any>(null);
+
+  useEffect(() => {
+    if (!selectedCaseId) return;
+    
+    // For demo purposes: fetch the most recent chat session's messages and insights
+    const fetchRealData = async () => {
+      try {
+        const { data: sessions } = await supabase
+          .from('chat_sessions')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1);
+          
+        if (sessions && sessions.length > 0) {
+          const sessionId = sessions[0].id;
+          const { data: msgs } = await supabase
+            .from('chat_messages')
+            .select('*')
+            .eq('session_id', sessionId)
+            .order('created_at', { ascending: true });
+          if (msgs) setRealChatMessages(msgs);
+          
+          const { data: insights } = await supabase
+            .from('agent_insights')
+            .select('*')
+            .eq('session_id', sessionId)
+            .eq('insight_type', 'care_advice')
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (insights && insights.length > 0) {
+            setRealCareAdvice(insights[0].payload.advice);
+          } else {
+            setRealCareAdvice(null);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch real data:", err);
+      }
+    };
+    fetchRealData();
+  }, [selectedCaseId]);
 
   // Helpers
   const currentCase = cases.find(c => c.id === selectedCaseId);
@@ -875,65 +921,42 @@ export default function HospitalDashboard() {
               {/* Right Column: E-Prescriptions & RAG Assistant */}
               <div className="space-y-6">
                 
-                {/* Clinical RAG Assistant Panel */}
+                {/* Real Chatbot Integration (Supabase) */}
                 <div className="bg-white p-5 rounded-xl border border-ink/10 shadow-sm flex flex-col h-[380px]">
                   <h4 className="text-sm font-bold text-teal-700 flex items-center gap-2 mb-2">
-                    <MessageSquare className="h-4 w-4" /> Doctor-Grade Clinical Assistant (RAG)
+                    <MessageSquare className="h-4 w-4" /> Live Patient Chat History
                   </h4>
                   <div className="flex-1 overflow-y-auto mb-3 space-y-3 pr-1 text-xs">
-                    {ragHistory.length === 0 ? (
+                    {realChatMessages.length === 0 ? (
                       <div className="text-ink/50 text-center py-8">
-                        Ask about clinical protocols, drug interactions, or dosage guidelines.<br/>
-                        <div className="mt-4 flex flex-col gap-1.5 items-center">
-                          <button 
-                            onClick={() => handleSendRagQuery(undefined, "Drug interaction metformin ibuprofen")}
-                            className="px-3 py-1 bg-ink/5 hover:bg-teal-50 hover:text-teal-700 border rounded text-[10px] font-medium transition-colors"
-                          >
-                            Query: Metformin & Ibuprofen Interaction
-                          </button>
-                          <button 
-                            onClick={() => handleSendRagQuery(undefined, "Standard treatment community acquired pneumonia")}
-                            className="px-3 py-1 bg-ink/5 hover:bg-teal-50 hover:text-teal-700 border rounded text-[10px] font-medium transition-colors"
-                          >
-                            Query: CAP Treatment Guidelines
-                          </button>
-                        </div>
+                        No live chat history found in Supabase. Run the chatbot to generate data!
                       </div>
                     ) : (
-                      ragHistory.map((item, idx) => (
-                        <div key={idx} className="space-y-2">
-                          <div className="bg-ink/5 p-2 rounded-lg font-bold text-ink/80">Q: {item.query}</div>
-                          <div className="bg-teal-50/30 p-2.5 rounded-lg border border-teal-500/10 text-ink leading-relaxed whitespace-pre-line">
-                            {item.answer}
-                            {item.sources && (
-                              <div className="mt-2 pt-2 border-t border-teal-500/10 text-[10px] text-ink/50">
-                                <span className="font-bold text-teal-700">Sources:</span> {item.sources.join(" · ")}
-                              </div>
-                            )}
+                      realChatMessages.map((msg, idx) => (
+                        <div key={idx} className={`space-y-1 ${msg.sender_type === 'user' ? 'text-right' : 'text-left'}`}>
+                          <div className={`inline-block p-1.5 rounded text-[10px] font-bold ${msg.sender_type === 'user' ? 'bg-teal-600 text-white' : 'bg-ink/10 text-ink/80'}`}>
+                            {msg.sender_type === 'user' ? 'Patient' : 'AI Assistant'}
+                          </div>
+                          <div className={`p-2.5 rounded-lg border text-ink leading-relaxed whitespace-pre-line text-left ${msg.sender_type === 'user' ? 'bg-teal-50 border-teal-200' : 'bg-white border-ink/10'}`}>
+                            {msg.content}
                           </div>
                         </div>
                       ))
                     )}
-                    {isRagLoading && (
-                      <div className="text-center text-ink/50 flex items-center justify-center gap-1.5 py-4">
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin text-teal-600" />
-                        Fetching clinical database guidelines...
-                      </div>
-                    )}
                   </div>
-                  <form onSubmit={handleSendRagQuery} className="flex gap-2">
-                    <input 
-                      type="text" 
-                      value={ragQuery} 
-                      onChange={(e) => setRagQuery(e.target.value)}
-                      placeholder="Ask guidelines, contraindications..." 
-                      className="flex-1 rounded-lg border border-ink/20 px-3 py-1.5 text-xs focus:border-teal-500 focus:outline-none bg-white text-ink"
-                    />
-                    <button type="submit" className="p-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow">
-                      <Send className="h-4 w-4" />
-                    </button>
-                  </form>
                 </div>
+
+                {/* AI Care Advice */}
+                {realCareAdvice && (
+                  <div className="bg-amber-50 p-5 rounded-xl border border-amber-200 shadow-sm">
+                    <h4 className="text-sm font-bold text-amber-700 flex items-center gap-2 mb-3">
+                      <ShieldCheck className="h-4 w-4" /> AI Care Advice (Precaution)
+                    </h4>
+                    <div className="text-xs text-amber-900 whitespace-pre-line leading-relaxed">
+                      {realCareAdvice}
+                    </div>
+                  </div>
+                )}
 
                 {/* E-Prescription Trigger / Pad */}
                 <div className="bg-white p-5 rounded-xl border border-ink/10 shadow-sm">

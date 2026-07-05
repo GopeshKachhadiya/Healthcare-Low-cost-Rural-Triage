@@ -21,6 +21,8 @@ for env_path in [
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY") or os.getenv("SUPABASE_KEY")
 
 print(f"--- STARTUP DEBUG ---")
 print(f"GROQ_API_KEY     loaded: {bool(GROQ_API_KEY)} | key[:8]: {(GROQ_API_KEY or '')[:8]}")
@@ -45,9 +47,31 @@ S2_URL = os.getenv("S2_URL", "http://localhost:8022")
 
 class PatientRequest(BaseModel):
     patient_id: str
+    session_id: Optional[str] = None
     action: str   # "chat", "screen_skin", "screen_eye", "screen_oral", "book_appointment"
     payload: dict
     language: str = "hi"
+
+async def _log_to_supabase(client: httpx.AsyncClient, table: str, data: dict):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return None
+    try:
+        resp = await client.post(
+            f"{SUPABASE_URL}/rest/v1/{table}",
+            headers={
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"
+            },
+            json=data
+        )
+        if resp.status_code in (200, 201):
+            return resp.json()[0] if isinstance(resp.json(), list) else resp.json()
+        print(f"DB log to {table} failed: {resp.status_code} {resp.text}")
+    except Exception as e:
+        print(f"DB log to {table} error: {e}")
+    return None
 
 @app.post("/route")
 async def route_patient_request(req: PatientRequest):
@@ -69,6 +93,24 @@ async def route_patient_request(req: PatientRequest):
             if req.action == "chat":
                 text = req.payload.get("text", "")
                 history = req.payload.get("history", [])
+                
+                # --- Create or Retrieve Chat Session ---
+                session_id = req.session_id
+                if not session_id and SUPABASE_URL:
+                    session_record = await _log_to_supabase(client, "chat_sessions", {
+                        "patient_id": req.patient_id,
+                        "status": "active"
+                    })
+                    if session_record:
+                        session_id = session_record.get("id")
+
+                # Log user message
+                if session_id:
+                    await _log_to_supabase(client, "chat_messages", {
+                        "session_id": session_id,
+                        "sender_type": "user",
+                        "content": text
+                    })
                 
                 # Check if it's just a greeting to bypass risk scan
                 is_greeting = text.strip().lower() in ["hi", "hello", "hey", "start"]
@@ -199,9 +241,9 @@ RULES:
                                 "Content-Type": "application/json"
                             },
                             json={
-                                "model": "meta-llama/llama-3.3-70b-instruct",
+                                "model": "meta-llama/llama-3.1-70b-instruct",
                                 "messages": messages,
-                                "temperature": 0.7,
+                                "temperature": 0.5,
                                 "max_tokens": 500
                             },
                             timeout=20.0
@@ -246,6 +288,12 @@ RULES:
                         json_match = re.search(r'\{.*?\}', raw_summary, re.DOTALL)
                         if json_match:
                             patient_summary_json = json.loads(json_match.group())
+                            if session_id:
+                                await _log_to_supabase(client, "agent_insights", {
+                                    "session_id": session_id,
+                                    "insight_type": "patient_profile",
+                                    "payload": patient_summary_json
+                                })
                     except Exception:
                         pass
 
@@ -434,6 +482,26 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
                     if sbar_generated:
                         print(sbar_note)
                         print("===========================================\n")
+                        if session_id:
+                            await _log_to_supabase(client, "agent_insights", {
+                                "session_id": session_id,
+                                "insight_type": "sbar_note",
+                                "payload": {"note": sbar_note}
+                            })
+
+                if session_id:
+                    await _log_to_supabase(client, "chat_messages", {
+                        "session_id": session_id,
+                        "sender_type": "agent",
+                        "agent_role": "A4_Care" if care_advice else "A2_Intake",
+                        "content": rag_answer
+                    })
+                    if care_advice:
+                        await _log_to_supabase(client, "agent_insights", {
+                            "session_id": session_id,
+                            "insight_type": "care_advice",
+                            "payload": {"advice": care_advice}
+                        })
                 
                 return {
                     "status": "success",
@@ -452,6 +520,22 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
             elif req.action in ("screen_skin", "screen_eye", "screen_oral"):
                 # Image has been uploaded — response from CV agent is passed in payload
                 cv_result = req.payload.get("cv_result", {})
+                cv_screening_id = cv_result.get("id")
+                
+                if req.session_id and cv_screening_id:
+                    try:
+                        await client.patch(
+                            f"{SUPABASE_URL}/rest/v1/chat_sessions?id=eq.{req.session_id}",
+                            headers={
+                                "apikey": SUPABASE_KEY,
+                                "Authorization": f"Bearer {SUPABASE_KEY}",
+                                "Content-Type": "application/json"
+                            },
+                            json={"cv_screening_id": cv_screening_id}
+                        )
+                    except Exception as e:
+                        print(f"Failed to link CV screening to session: {e}")
+
                 tier = cv_result.get("tier", "green")
 
                 if tier in ("red", "orange"):
