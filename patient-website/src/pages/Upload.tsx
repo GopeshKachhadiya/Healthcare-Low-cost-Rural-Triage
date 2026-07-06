@@ -135,7 +135,7 @@ export default function Upload() {
             </Link>
             <div>
               <h1 className="font-display text-3xl font-bold text-teal-700">{t("scan.title")}</h1>
-              <p className="text-sm text-ink/60">Photograph or select a lesion, rash, eye, or oral concern.</p>
+              <p className="text-sm text-ink/60">Photograph or select a skin lesion or rash.</p>
             </div>
           </div>
 
@@ -163,9 +163,7 @@ export default function Upload() {
                 <label className="block text-xs font-semibold text-ink/50 uppercase">Scan Target</label>
                 <div className="mt-2 space-y-2">
                   {[
-                    { id: "skin_photo", label: "Skin Condition / Rash" },
-                    { id: "eye", label: "Eye Redness / Cataract" },
-                    { id: "oral", label: "Oral Lesion / Spots" }
+                    { id: "skin_photo", label: "Skin Condition / Rash" }
                   ].map((m) => (
                     <label key={m.id} className="flex items-center gap-2.5 cursor-pointer">
                       <input
@@ -190,49 +188,6 @@ export default function Upload() {
             </div>
           </div>
 
-          <PulseDivider className="opacity-25" />
-
-          {/* Test/Demo Cases */}
-          <div>
-            <h2 className="flex items-center gap-1.5 font-display text-xl font-bold text-teal-700 mb-2">
-              <Sparkles className="h-5 w-5 text-marigold-500" />
-              Demo Showcase Cases
-            </h2>
-            <p className="text-xs text-ink/50 mb-4">Click a preset scan to run the simulation loading screen and inspect results.</p>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {PRESET_CASES.map((c) => (
-                <button
-                  key={c.name}
-                  onClick={() => startAnalysis(c)}
-                  className="flex flex-col text-left rounded-xl border border-ink/10 bg-white overflow-hidden shadow-sm hover:border-teal-400 hover:shadow-md transition-all group"
-                >
-                  <div className="h-32 w-full bg-paper flex items-center justify-center p-2 relative">
-                    <img
-                      src={c.image}
-                      alt={c.condition}
-                      className="max-h-full max-w-full rounded object-contain"
-                    />
-                    <span className={`absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold text-white ${
-                      c.tier === "red" ? "bg-tier-red" : c.tier === "orange" ? "bg-tier-orange" : c.tier === "yellow" ? "bg-tier-yellow" : "bg-tier-green"
-                    }`}>
-                      {c.tier.toUpperCase()} TIER
-                    </span>
-                  </div>
-                  <div className="p-4 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h4 className="font-semibold text-sm text-ink leading-snug group-hover:text-teal-600 transition-colors">
-                        {c.name}
-                      </h4>
-                      <p className="text-xs text-ink/50 mt-1">{c.condition}</p>
-                    </div>
-                    <p className="text-xs font-semibold text-teal-600 mt-3 flex items-center gap-1">
-                      Run scan →
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       )}
     </div>
