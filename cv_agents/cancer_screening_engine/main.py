@@ -4,24 +4,24 @@ import io
 import os
 from PIL import Image
 from ultralytics import YOLO
-from huggingface_hub import hf_hub_download
-
 app = FastAPI(title="Cancer Screening Engine API", description="Computer Vision Agent H5 for Multi-organ Cancer Screening")
 
-print("Downloading and loading YOLOv8 cancer screening models from Hugging Face...")
-os.makedirs("models", exist_ok=True)
+print("Attempting to load local cancer screening models...")
+lung_model_path = os.path.join(os.path.dirname(__file__), "../../models/lung_cancer_model.pt")
+breast_model_path = os.path.join(os.path.dirname(__file__), "../../models/breast_cancer_model.pt")
 
 try:
-    lung_model_path = hf_hub_download(repo_id="sihatech/lung-cancer-yolov8-cls", filename="best.pt", cache_dir="models")
-    lung_model = YOLO(lung_model_path)
-    
-    breast_model_path = hf_hub_download(repo_id="sihatech/breast-cancer-yolov8-cls", filename="best.pt", cache_dir="models")
-    breast_model = YOLO(breast_model_path)
-    print("Models loaded successfully.")
+    lung_model = YOLO(lung_model_path) if os.path.exists(lung_model_path) else None
+    print("Lung model loaded locally." if lung_model else "Lung model not found, will use mock.")
 except Exception as e:
-    print(f"Error loading models from Hugging Face: {e}")
-    print("Will fall back to mock inference if models are not available.")
+    print(f"Error loading lung model: {e}")
     lung_model = None
+
+try:
+    breast_model = YOLO(breast_model_path) if os.path.exists(breast_model_path) else None
+    print("Breast model loaded locally." if breast_model else "Breast model not found, will use mock.")
+except Exception as e:
+    print(f"Error loading breast model: {e}")
     breast_model = None
 
 @app.post("/predict")

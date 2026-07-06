@@ -5,6 +5,7 @@ import TierBadge from "../components/TierBadge";
 import PulseDivider from "../components/PulseDivider";
 import { ShieldCheck, Calendar, ArrowLeft, BookOpen, AlertTriangle, FileText, MessageCircle } from "lucide-react";
 import GradCamOverlay from "../components/GradCamOverlay";
+import ScanResultChatPanel from "../components/ScanResultChatPanel";
 
 export default function ScreeningResult() {
   const { id } = useParams<{ id: string }>();
@@ -34,7 +35,7 @@ export default function ScreeningResult() {
   );
 
   return (
-    <div className="mx-auto max-w-4xl px-5 py-10">
+    <div className="mx-auto max-w-7xl px-5 py-10">
       <div className="mb-6">
         <Link to="/scan" className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:underline">
           <ArrowLeft className="h-4 w-4" />
@@ -53,9 +54,9 @@ export default function ScreeningResult() {
 
       <PulseDivider className="mb-8 opacity-30" />
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-12 items-start">
         {/* Left Column: Visual assessment with heatmap overlay slider */}
-        <div className="md:col-span-5 space-y-6">
+        <div className="md:col-span-4 space-y-6">
           <GradCamOverlay image={scan.image} heatmap={scan.heatmap} />
 
 
@@ -89,8 +90,8 @@ export default function ScreeningResult() {
           </div>
         </div>
 
-        {/* Right Column: RAG grounded description & recommendations */}
-        <div className="md:col-span-7 space-y-6">
+        {/* Middle Column: RAG grounded description & recommendations */}
+        <div className="md:col-span-5 space-y-6">
           {/* AI Diagnostic Summary */}
           {scan.summary && (
             <div className="rounded-xl border border-teal-500/20 bg-teal-50/10 p-6 shadow-sm space-y-4">
@@ -124,22 +125,7 @@ export default function ScreeningResult() {
             <p className="text-sm text-ink/80 leading-relaxed">{scan.recommendation}</p>
           </div>
 
-          {/* Chat about condition assistant */}
-          <div className="rounded-xl border border-teal-500/20 bg-teal-50/30 p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-            <div className="leading-tight">
-              <h4 className="font-semibold text-teal-700 text-sm flex items-center gap-2">
-                <MessageCircle className="h-4 w-4 text-teal-600" />
-                Have questions about {scan.condition}?
-              </h4>
-              <p className="text-xs text-ink/60 mt-1">Discuss this result, understand precautions, and ask questions to our AI assistant.</p>
-            </div>
-            <Link
-              to={`/chat?condition=${encodeURIComponent(scan.condition)}`}
-              className="flex min-h-touch items-center gap-1.5 rounded-lg bg-teal-500 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-600 transition-colors shrink-0"
-            >
-              Chat about condition
-            </Link>
-          </div>
+
 
           {/* Dynamic Referral/Appointment widget */}
           {scan.tier === "red" || scan.tier === "orange" ? (
@@ -187,6 +173,12 @@ export default function ScreeningResult() {
               </Link>
             </div>
           )}
+        </div>
+
+
+        {/* Right Column: Chat Panel */}
+        <div className="md:col-span-3 h-[calc(100vh-100px)] sticky top-6 rounded-xl overflow-hidden shadow-sm border border-ink/10 bg-white">
+          <ScanResultChatPanel condition={scan.condition} summary={scan.summary || scan.explanation} />
         </div>
       </div>
     </div>

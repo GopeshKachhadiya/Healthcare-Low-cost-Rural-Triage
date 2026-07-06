@@ -4,7 +4,6 @@ import io
 import os
 from PIL import Image
 from ultralytics import YOLO
-from huggingface_hub import hf_hub_download
 from dotenv import load_dotenv
 import httpx
 
@@ -42,8 +41,8 @@ def load_model(repo_id, key):
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     local_paths = {
         "skin": os.path.join(BASE_DIR, "skin_disease_model.pt"),
-        "eye": os.path.join(BASE_DIR, "../../models/skin_disease_model.pt"),
-        "oral": os.path.join(BASE_DIR, "../../models/skin_disease_model.pt")
+        "eye": os.path.join(BASE_DIR, "../../models/eye_disease_model.pt"),
+        "oral": os.path.join(BASE_DIR, "../../models/oral_disease_model.pt")
     }
     
     local_path = local_paths.get(key)
@@ -55,13 +54,8 @@ def load_model(repo_id, key):
         except Exception as e:
             print(f"Error loading local model {key} from {local_path}: {e}")
 
-    try:
-        path = hf_hub_download(repo_id=repo_id, filename="best.pt", cache_dir="models")
-        models[key] = YOLO(path)
-        print(f"Model {key} loaded successfully from Hugging Face.")
-    except Exception as e:
-        print(f"Error loading {key} model from Hugging Face: {e}")
-        models[key] = None
+    print(f"No local model found for {key}. Proceeding without model.")
+    models[key] = None
 
 # Load the models
 load_model("Organika/yolov8n-cls-skin-diseases", "skin")
@@ -192,7 +186,7 @@ async def predict(file: UploadFile = File(...), scan_type: str = Form("skin")):
         
         if model_to_use is None:
             # Fallback mock response if HF download failed
-            mock_class = "melanoma" if scan_type == "skin" else "cataract" if scan_type == "eye" else "oscc"
+            mock_class = "acne" if scan_type == "skin" else "cataract" if scan_type == "eye" else "oscc"
             summary = await get_dynamic_summary(scan_type, mock_class, 0.85)
                     
             return JSONResponse(content={

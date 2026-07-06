@@ -55,13 +55,49 @@ def main():
     ]
 
     env = os.environ.copy()
-    print(f"[Start] Launching backend on http://localhost:{PORT}")
+    cv_agents = [
+        ("cv_agents/brain_tumor_segmenter/main.py", 8002),
+        ("cv_agents/brain_tumor_classifier/main.py", 8003),
+        ("cv_agents/skin_screener/main.py", 8005),
+        ("cv_agents/cancer_screening_engine/main.py", 8009),
+    ]
+
+    cv_processes = []
+    
+    print("[Start] Launching local CV models...")
+    for agent_path, port in cv_agents:
+        if os.path.exists(agent_path):
+            mod_path = agent_path.replace("/", ".").replace("\\", ".").replace(".py", "")
+            agent_cmd = [sys.executable, "-m", "uvicorn", f"{mod_path}:app", "--host", "0.0.0.0", "--port", str(port)]
+            
+            # Kill existing port just in case
+            kill_port(port)
+            
+            print(f"        -> {agent_path} on port {port}")
+            if sys.platform == 'win32':
+                p = subprocess.Popen(agent_cmd, env=env, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+            else:
+                p = subprocess.Popen(agent_cmd, env=env, preexec_fn=os.setsid)
+            cv_processes.append(p)
+    
+    print(f"\n[Start] Launching chatbot backend on http://localhost:{PORT}")
     print(f"        Press Ctrl+C to stop.\n")
 
     try:
         subprocess.run(cmd, env=env)
     except KeyboardInterrupt:
-        print("\n[Stop] Chatbot backend shut down. Goodbye!")
+        print("\n[Stop] Shutting down...")
+    finally:
+        # Cleanup CV models
+        for p in cv_processes:
+            try:
+                if sys.platform == 'win32':
+                    p.send_signal(subprocess.signal.CTRL_BREAK_EVENT)
+                else:
+                    p.terminate()
+            except:
+                pass
+        print("Chatbot backend and CV models shut down. Goodbye!")
 
 if __name__ == "__main__":
     main()

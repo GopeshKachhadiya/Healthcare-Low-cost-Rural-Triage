@@ -4,8 +4,6 @@ import io
 import os
 from PIL import Image
 from ultralytics import YOLO
-from huggingface_hub import hf_hub_download
-
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Brain Tumor Classifier API", description="Computer Vision Agent H3 for Brain Tumor Classification")
@@ -36,13 +34,8 @@ if os.path.exists(local_path):
         print(f"Error loading local model from {local_path}: {e}")
         model = None
 else:
-    try:
-        model_path = hf_hub_download(repo_id="david-lim/yolov8n-cls-brain-tumor", filename="best.pt", cache_dir="models")
-        model = YOLO(model_path)
-        print("Model loaded successfully from Hugging Face.")
-    except Exception as e:
-        print(f"Error loading model from Hugging Face: {e}")
-        model = None
+    print("No local model found. Falling back to mock logic.")
+    model = None
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):

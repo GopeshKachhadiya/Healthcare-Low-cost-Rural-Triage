@@ -5,8 +5,6 @@ import os
 import base64
 from PIL import Image
 from ultralytics import YOLO
-from huggingface_hub import hf_hub_download
-
 app = FastAPI(title="Brain Tumor Segmenter API", description="Computer Vision Agent H2 for Brain Tumor Segmentation")
 
 from fastapi.middleware.cors import CORSMiddleware
