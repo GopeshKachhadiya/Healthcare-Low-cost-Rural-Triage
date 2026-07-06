@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Mic, Camera, MessageCircle, Clock, MapPin, CalendarCheck, Heart } from "lucide-react";
 import PulseDivider from "../components/PulseDivider";
 import TierBadge from "../components/TierBadge";
@@ -8,6 +8,10 @@ import { useTranslation } from "../hooks/useTranslation";
 export default function Home() {
   const { scans, appointments, user } = useApp();
   const { t } = useTranslation();
+
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
 
   const QUICK_ACTIONS = [
     {
@@ -72,7 +76,7 @@ export default function Home() {
       {/* ── Hero: voice is the largest, most prominent element ── */}
       <section className="mx-auto max-w-3xl px-5 pb-10 pt-14 text-center">
         <p className="font-display text-lg text-marigold-600">
-          {user ? `${t("home.welcome")}, ${user.name}` : t("home.subtitle")}
+          {t("home.welcome")}, {user.name}
         </p>
         <h1 className="mt-3 font-display text-4xl font-semibold leading-tight text-teal-700 sm:text-5xl">
           {t("home.subtitle")}
@@ -105,18 +109,16 @@ export default function Home() {
             <Link
               key={to}
               to={to}
-              className={`group flex min-h-touch flex-col gap-3 rounded-xl border p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
-                highlight
+              className={`group flex min-h-touch flex-col gap-3 rounded-xl border p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${highlight
                   ? "border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50 hover:border-rose-400"
                   : "border-ink/10 bg-white hover:border-teal-400"
-              }`}
+                }`}
             >
               <span
-                className={`flex h-12 w-12 items-center justify-center rounded-lg transition-colors ${
-                  highlight
+                className={`flex h-12 w-12 items-center justify-center rounded-lg transition-colors ${highlight
                     ? "bg-rose-100 text-rose-500 group-hover:bg-rose-500 group-hover:text-white"
                     : "bg-teal-50 text-teal-600 group-hover:bg-teal-500 group-hover:text-white"
-                }`}
+                  }`}
               >
                 <Icon className="h-6 w-6" strokeWidth={2} />
               </span>

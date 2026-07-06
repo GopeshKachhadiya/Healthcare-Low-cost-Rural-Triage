@@ -1,9 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 
-export type ChatPhase =
-  | "NORMAL"          // standard Q&A flow
-  | "AWAITING_REPORT" // waiting for user to paste their report text
-  | "DONE";           // booking confirmed
+export type ChatPhase = "NORMAL" | "AWAITING_REPORT" | "DONE";
 
 export const CLINIC_LIST = [
   { name: "Chandpur Primary Health Centre", distance: "1.2 km", time: "09:00 AM – 05:00 PM" },
@@ -20,6 +17,7 @@ export interface PeriodMessage {
   isReport?: boolean;   // report analysis block
   isBooking?: boolean;  // final booking confirmation
   audioBase64?: string;
+  imageUrl?: string;    // attached image
 }
 
 interface OpenRouterMessage {
@@ -45,7 +43,7 @@ export function usePeriodHealthChat() {
     ]);
   }, []);
 
-  const callBackend = async (text: string) => {
+  const callBackend = async (text: string, imageBase64?: string) => {
     const hasGujarati = /[\u0A80-\u0AFF]/.test(text);
     const hasHindi    = /[\u0900-\u097F]/.test(text);
     const effectiveLang = hasGujarati ? "gu" : hasHindi ? "hi" : "en";
@@ -62,6 +60,7 @@ export function usePeriodHealthChat() {
         payload: {
           text,
           history: conversationHistory.current,
+          image_base64: imageBase64,
         },
         language: effectiveLang,
       }),
@@ -84,18 +83,20 @@ export function usePeriodHealthChat() {
   };
 
   const sendMessage = useCallback(
-    async (text: string) => {
-      if (!text.trim() || isLoading) return;
+    async (text: string, imageBase64?: string) => {
+      if (!text.trim() && !imageBase64) return;
+      if (isLoading) return;
       
-      addMessage({ role: "user", content: text });
+      addMessage({ role: "user", content: text || "[Image Attached]", imageUrl: imageBase64 });
       
       setIsLoading(true);
 
       try {
-        const { reply, isEmergency, audioBase64 } = await callBackend(text);
+        const { reply, isEmergency, audioBase64 } = await callBackend(text, imageBase64);
 
         // Check for specific backend responses to update local state
-        const isAwaitingReport = reply.includes("Please type in the details from your report");
+        const isAwaitingReport = reply.includes("Ultrasound Analysis panel on the right side") || 
+                                  reply.includes("Please type in the details from your report");
         const isBookingConfirm = /appointment has been successfully booked/i.test(reply);
 
         addMessage({
@@ -128,14 +129,15 @@ export function usePeriodHealthChat() {
   );
 
   const submitReport = useCallback(
-    async (reportText: string) => {
-      if (!reportText.trim() || isLoading) return;
+    async (reportText: string, imageBase64?: string) => {
+      if (!reportText.trim() && !imageBase64) return;
+      if (isLoading) return;
       
-      addMessage({ role: "user", content: reportText, isReport: true });
+      addMessage({ role: "user", content: reportText || "[Image Attached]", isReport: true, imageUrl: imageBase64 });
       setIsLoading(true);
 
       try {
-        const { reply, isEmergency, audioBase64 } = await callBackend(reportText);
+        const { reply, isEmergency, audioBase64 } = await callBackend(reportText, imageBase64);
 
         const isBookingConfirm = /appointment has been successfully booked/i.test(reply);
 

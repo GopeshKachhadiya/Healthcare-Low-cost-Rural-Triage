@@ -1,12 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "../hooks/useSession";
 import { Phone, ArrowRight, ShieldCheck, HelpCircle, Activity, Stethoscope, Syringe, BarChart2, Mail, Eye, EyeOff, Smartphone, User } from "lucide-react";
 import PulseDivider from "../components/PulseDivider";
 
 export default function Login() {
-  const { login } = useSession();
+  const { login, isLoggedIn, user } = useSession();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      if (user?.role && user.role !== "patient") {
+        navigate("/hospital");
+      } else {
+        navigate("/home");
+      }
+    }
+  }, [isLoggedIn, navigate, user]);
 
   const [loginType, setLoginType] = useState<"patient" | "staff">("patient");
   const [role, setRole] = useState<"doctor" | "nurse" | "admin">("doctor");
@@ -48,7 +58,7 @@ export default function Login() {
     setTimeout(() => {
       setLoading(false);
       login(`+91 ${phone}`, "Ramesh Kumar", "patient");
-      navigate("/");
+      navigate("/home");
     }, 1000);
   };
 
@@ -70,7 +80,7 @@ export default function Login() {
       setLoading(false);
       if (demoRole === "patient") {
         login("+91 9876543210", "Ramesh Kumar", "patient");
-        navigate("/");
+        navigate("/home");
       } else {
         login("staff@arogyamitra.in", demoRole === "doctor" ? "Dr. Priya Sharma" : demoRole === "nurse" ? "ANM Kamla Devi" : "District Admin", demoRole);
         navigate("/hospital");

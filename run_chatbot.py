@@ -56,6 +56,7 @@ def main():
 
     env = os.environ.copy()
     cv_agents = [
+        ("orchestrators/patient_orchestrator/period_chatbot.py", 8001),
         ("cv_agents/brain_tumor_segmenter/main.py", 8002),
         ("cv_agents/brain_tumor_classifier/main.py", 8003),
         ("cv_agents/skin_screener/main.py", 8005),

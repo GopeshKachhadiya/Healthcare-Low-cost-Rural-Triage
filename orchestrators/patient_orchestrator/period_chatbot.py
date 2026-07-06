@@ -1,13 +1,16 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, List, Dict
+from typing import Optional
 import httpx
 import os
 import json
+import base64
+import io
+from PIL import Image
 from dotenv import load_dotenv
 
-# Try multiple .env paths for resilience
+# ── Load environment ──────────────────────────────────────────────────────────
 for env_path in [
     os.path.join(os.path.dirname(__file__), '../../.env'),
     os.path.join(os.getcwd(), '.env'),
@@ -17,10 +20,24 @@ for env_path in [
         load_dotenv(env_path)
         break
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY") or os.getenv("SUPABASE_KEY")
 
+# ── YOLO PCOS Model ───────────────────────────────────────────────────────────
+pcos_model = None
+try:
+    from ultralytics import YOLO
+    model_path = os.path.join(os.path.dirname(__file__), "PCOS_model_epcoh%3D100.pt")
+    if os.path.exists(model_path):
+        pcos_model = YOLO(model_path)
+        print("[Info] YOLO PCOS Model loaded successfully.")
+    else:
+        print("[Warning] PCOS YOLO Model not found at", model_path)
+except Exception as e:
+    print(f"[Warning] Could not load YOLO model: {e}")
+
+# ── FastAPI App ───────────────────────────────────────────────────────────────
 app = FastAPI(title="Period Health Chatbot API")
 
 app.add_middleware(
@@ -31,6 +48,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Request models ─────────────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
     patient_id: str
     session_id: Optional[str] = None
@@ -38,6 +56,10 @@ class ChatRequest(BaseModel):
     payload: dict
     language: Optional[str] = "hi"
 
+class ScanRequest(BaseModel):
+    image_base64: str
+
+# ── Supabase helper ───────────────────────────────────────────────────────────
 async def _log_to_supabase(client: httpx.AsyncClient, table: str, data: dict):
     if not SUPABASE_URL or not SUPABASE_KEY:
         return None
@@ -58,48 +80,126 @@ async def _log_to_supabase(client: httpx.AsyncClient, table: str, data: dict):
         print(f"DB log to {table} error: {e}")
     return None
 
-@app.post("/route")
-async def period_route(req: ChatRequest):
-    if req.action != "period_chat":
-        return {"status": "error", "message": "Only period_chat action supported."}
+# ── YOLO inference helper ─────────────────────────────────────────────────────
+def run_yolo(image_base64: str) -> dict:
+    if not pcos_model:
+        return {
+            "status": "error",
+            "label": "Model not loaded",
+            "confidence": 0.0,
+            "infected": False,
+            "summary": "The PCOS detection model is not loaded on the server. Please ensure ultralytics is installed and the model file exists.",
+            "flag": "unclear"
+        }
+    try:
+        if "," in image_base64:
+            image_base64 = image_base64.split(",")[1]
+        img_data = base64.b64decode(image_base64)
+        img = Image.open(io.BytesIO(img_data)).convert("RGB")
 
-    text = req.payload.get("text", "")
-    history = req.payload.get("history", [])
+        results = pcos_model(img, verbose=False)
+        if not results or len(results) == 0:
+            return {
+                "status": "success",
+                "label": "No result",
+                "confidence": 0.0,
+                "infected": False,
+                "summary": "The model did not return any results. Please try a clearer ultrasound image.",
+                "flag": "unclear"
+            }
 
-    user_lang = req.language or "hi"
-    from orchestrators.patient_orchestrator.sarvam_helper import translate_text, text_to_speech
-    english_text = await translate_text(text, user_lang, "en")
-    print(f"  -> Translated PeriodBot input from {user_lang} to en: '{english_text}'")
+        result = results[0]
 
-    translated_history = []
-    for msg in history:
-        role = msg.get("role", "user")
-        content = msg.get("content", "")
-        content_en = await translate_text(content, user_lang, "en") if user_lang != "en" else content
-        translated_history.append({"role": role, "content": content_en})
+        # ── Classification model (.probs) ──────────────────────────────────
+        if hasattr(result, "probs") and result.probs is not None:
+            probs = result.probs
+            cls_id = int(probs.top1)
+            confidence = float(probs.top1conf.item())
+            label = result.names[cls_id]
+            infected = "infected" in label.lower() or "pcos" in label.lower()
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        session_id = req.session_id
-        if not session_id and SUPABASE_URL:
-            session_record = await _log_to_supabase(client, "chat_sessions", {
-                "patient_id": req.patient_id,
-                "status": "active"
-            })
-            if session_record:
-                session_id = session_record.get("id")
+            if infected:
+                flag = "abnormal"
+                summary = (
+                    f"The AI classified this ultrasound as **{label}** with "
+                    f"{confidence*100:.1f}% confidence. This may suggest PCOS-related "
+                    f"findings. Please consult a gynecologist for formal clinical evaluation."
+                )
+            else:
+                flag = "normal"
+                summary = (
+                    f"The AI classified this ultrasound as **{label}** with "
+                    f"{confidence*100:.1f}% confidence. No PCOS indicators were detected. "
+                    f"A doctor should always review these findings clinically."
+                )
 
-        if session_id:
-            await _log_to_supabase(client, "chat_messages", {
-                "session_id": session_id,
-                "sender_type": "user",
-                "content": text
-            })
+            return {
+                "status": "success",
+                "label": label,
+                "confidence": round(confidence * 100, 1),
+                "infected": infected,
+                "summary": summary,
+                "flag": flag
+            }
 
-        is_report_turn = False
-        if len(translated_history) > 0 and "Please type in the details from your report" in translated_history[-1].get("content", ""):
-            is_report_turn = True
+        # ── Detection model (.boxes) ───────────────────────────────────────
+        if hasattr(result, "boxes") and result.boxes is not None and len(result.boxes) > 0:
+            boxes = result.boxes
+            best_idx = int(boxes.conf.argmax().item())
+            cls_id = int(boxes.cls[best_idx].item())
+            confidence = float(boxes.conf[best_idx].item())
+            label = result.names[cls_id]
+            infected = "infected" in label.lower() or "pcos" in label.lower()
 
-        MODEL_A_SYSTEM_PROMPT = """You are a menstrual health intake and triage assistant for a healthcare app used in
+            if infected:
+                flag = "abnormal"
+                summary = (
+                    f"The YOLO model detected **{label}** with {confidence*100:.1f}% confidence. "
+                    f"This may suggest PCOS-related findings in the ovarian ultrasound. "
+                    f"Please consult a gynecologist for formal clinical evaluation."
+                )
+            else:
+                flag = "normal"
+                summary = (
+                    f"The YOLO model detected **{label}** with {confidence*100:.1f}% confidence. "
+                    f"No PCOS indicators were detected. "
+                    f"A doctor should always review ultrasound findings clinically."
+                )
+
+            return {
+                "status": "success",
+                "label": label,
+                "confidence": round(confidence * 100, 1),
+                "infected": infected,
+                "summary": summary,
+                "flag": flag
+            }
+
+        # ── No detection found ─────────────────────────────────────────────
+        return {
+            "status": "success",
+            "label": "No finding",
+            "confidence": 0.0,
+            "infected": False,
+            "summary": "The AI model did not detect any clear PCOS indicators in this ultrasound image. The image may be normal, or the scan quality may not be sufficient for analysis.",
+            "flag": "unclear"
+        }
+
+    except Exception as e:
+        print(f"[Error] YOLO inference failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "status": "error",
+            "label": "Error",
+            "confidence": 0.0,
+            "infected": False,
+            "summary": f"Failed to analyze the image: {str(e)}",
+            "flag": "unclear"
+        }
+
+# ── Prompts ───────────────────────────────────────────────────────────────────
+MODEL_A_SYSTEM_PROMPT = """You are a menstrual health intake and triage assistant for a healthcare app used in
 India. You are NOT a doctor and must never give a confirmed diagnosis or prescribe
 medication on your own authority. Your job is to collect information conversationally,
 one question at a time, and produce a structured triage report.
@@ -116,52 +216,40 @@ FLOW — ask these in order, one at a time, waiting for the user's reply each ti
    sudden weight change, acne, excess hair growth, or possibility of pregnancy.
 7. Ask about pre-existing conditions (thyroid, diabetes, PCOS/PCOD) or current
    medication, including birth control.
-8. Ask: "Do you have any recent test report you'd like to share, like a blood test
-   (hormone levels, thyroid) or an ultrasound report? This can help give a more
-   accurate response." Present as a numbered choice:
-   1. Yes, I want to share a report
+8. Ask: "Do you have any recent lab reports you'd like to share, like hormone levels
+   (TSH, LH, FSH)? You can also use the Ultrasound Analysis panel on the right side
+   to scan your ultrasound image for PCOS." Present as a numbered choice:
+   1. Yes, I want to paste my lab report values
    2. No, continue without it
-   - If the user picks 1, respond only with the exact token: [[HANDOFF:REPORT_MODEL]]
-     and stop — the system will run the report model and return its output to you
-     as a system message before you continue.
-   - If the user picks 2, continue directly to step 9.
-9. Generate the final structured report using exactly this template, filling in the
-   bracketed sections from the conversation (and from the report model's output if
-   provided):
+   - If the user picks 1, respond ONLY with the exact token: [[HANDOFF:REPORT_MODEL]]
+   - If the user picks 2, skip to step 9.
+   - CRITICAL: If you see "REPORT_MODEL_OUTPUT" in a system message, generate Step 9 immediately.
+9. Generate the final structured report:
 
 🩺 What You Have Told Us
-[summary of name, age, issue, duration, pain, flow, associated symptoms, history]
+[summary of name, age, issue, duration, pain, flow, symptoms, history]
 
-📄 Report Analysis
-[Report model's summary + flag, OR "Not provided — recommend bringing any recent
-reports to your appointment."]
+📄 Lab Report Analysis
+[If provided: summarize findings. Otherwise: "Not provided."]
 
 💊 What You Can Do Right Now (Home Care)
-[3-6 relevant, safe, non-drug bullet points: hydration, heat pad, rest, iron-rich
-food if heavy flow, tracking the cycle, avoiding strenuous activity if in pain]
+[3-6 safe, specific bullet points]
 
-🚨 Go to Hospital IMMEDIATELY if you notice:
-[red flag bullets: soaking a pad/tampon hourly for 2+ hours, fainting/dizziness with
-heavy bleeding, severe unrelieved pain, bleeding over 7 days, possible pregnancy with
-severe pain/bleeding, fever with pelvic pain]
+🚨 Go to Hospital IMMEDIATELY if:
+[4-5 specific red flag bullets]
 
 📋 What This Could Be (Possible Causes)
-[2-3 plausible, non-diagnostic possibilities based on symptoms/report, always framed
-as "could be" language, never definitive]
+[2-3 possibilities with "could be" language]
 
 ⏱️ When to Follow Up
-[condition-based guidance, e.g. "if pain is still 5+ after 24-48 hrs" or "if report
-shows borderline/abnormal values"]
+[timing guidance]
 
 🎯 Urgency Level
-[🟢 Routine / 🟡 Within 24-48 hrs / 🔴 Immediate] — choose based on red flags present
+[🟢 Routine / 🟡 Within 24-48 hrs / 🔴 Immediate]
 
 📝 Suggested Next Steps (Pending Doctor Approval)
-[tests/referrals only — e.g. "pelvic ultrasound", "hormonal panel", "gynecologist
-consultation" — ONLY suggest a test if it hasn't already been provided in the report]
-IMPORTANT: No medication should be started without a doctor's evaluation.
-
-🏥 A hospital appointment is being arranged for you.
+[test/referral suggestions]
+IMPORTANT: No medication without doctor's evaluation.
 
 🏥 Nearest Available Hospitals / Clinics:
 1. Chandpur Primary Health Centre (2.1 km)
@@ -169,63 +257,95 @@ IMPORTANT: No medication should be started without a doctor's evaluation.
 3. Rural Care Clinic (5 km)
 Please type the name or number of the hospital you want to visit.
 
-10. When the user selects a clinic, confirm the booking using this format:
-
+10. When the user selects a clinic:
 Congratulations, [Name]! Your appointment has been successfully booked at [Clinic].
 Appointment Details:
 • Date: Today
 • Time: 10:00 AM
 • Doctor: Dr. [Name] (Gynecologist)
 • Clinic: [Clinic]
-Please arrive at least 15 minutes prior. Bring:
-• A valid government-issued ID
-• Any relevant medical records/report you mentioned
-• A list of your current medications
-We hope you feel better soon!
+Please arrive 15 minutes early. Bring ID, medical records, and medication list.
 
 RULES:
-- Ask only ONE question per turn. Never bundle multiple questions together.
-- Never suggest specific drug names or dosages for period/PCOS-related issues,
-  except general, universally safe OTC advice already listed above (heat, hydration,
-  rest) — no hormonal medication, painkillers by name, or supplements.
-- If the user reports signs of a medical emergency at ANY point (heavy bleeding with
-  fainting, severe unrelieved pain, signs of pregnancy complication), skip remaining
-  questions and immediately advise urgent/emergency care.
-- Never state a confirmed diagnosis. Use "could be," "commonly associated with,"
-  "worth checking with a doctor."
-- If you detect the user may be a minor, keep language age-appropriate and suggest
-  involving a parent/guardian or trusted adult alongside medical care.
+- Ask only ONE question per turn.
+- Never diagnose. Use "could be," "commonly associated with."
+- For emergencies, skip remaining questions and advise urgent care immediately.
 """
 
-        MODEL_B_SYSTEM_PROMPT = """You are a medical report interpretation assistant. You receive raw text describing
-a lab report or ultrasound finding related to menstrual/hormonal health (e.g. LH,
-FSH, TSH, prolactin, testosterone, fasting insulin, or an ultrasound summary).
-
-Your job:
-1. Identify any values or findings mentioned.
-2. Compare each to typical reference ranges where you can do so reliably, and note
-   whether it looks within range, borderline, or notably outside range.
-3. NEVER provide a diagnosis. Only describe whether values look typical or not, and
-   note that a doctor must interpret them alongside the patient's symptoms and exam.
-4. If the input is unclear, incomplete, or you cannot confidently identify values,
-   say so rather than guessing.
-
-Respond with ONLY valid JSON, no other text, in this exact schema:
-
+MODEL_B_SYSTEM_PROMPT = """You are a medical report interpretation assistant for menstrual/hormonal health.
+Respond ONLY with valid JSON:
 {
-  "report_summary": "<1-3 sentence plain-language summary of what was found>",
+  "report_summary": "<1-3 sentence plain-language summary>",
   "flag": "normal" | "borderline" | "abnormal" | "unclear",
-  "notes": "<short note on what this means and that a doctor should interpret it
-             alongside symptoms; never a diagnosis>"
+  "notes": "<short note; never a diagnosis>"
 }
 """
 
-        MODEL_A_ID = "meta-llama/llama-3.3-70b-instruct"
-        MODEL_B_ID = "meta-llama/llama-3.3-70b-instruct"
+MODEL_A_ID = "meta-llama/llama-3.3-70b-instruct"
+MODEL_B_ID = "meta-llama/llama-3.3-70b-instruct"
+
+# ── YOLO Scan Endpoint (standalone — no chatbot involved) ─────────────────────
+@app.post("/scan-ultrasound")
+async def scan_ultrasound(req: ScanRequest):
+    """
+    Standalone YOLO endpoint. Takes a base64 image, runs PCOS detection,
+    returns the result. Completely independent of the chatbot.
+    """
+    result = run_yolo(req.image_base64)
+    return result
+
+# ── Chat Endpoint ─────────────────────────────────────────────────────────────
+@app.post("/route")
+async def period_route(req: ChatRequest):
+    if req.action != "period_chat":
+        return {"status": "error", "message": "Only period_chat action supported."}
+
+    text = req.payload.get("text", "") or ""
+    history = req.payload.get("history", [])
+
+    # Detect if bot just asked for a lab report (text handoff only)
+    is_report_turn = any(
+        "Please type in the details from your report" in msg.get("content", "") or
+        "REPORT_MODEL_OUTPUT" in msg.get("content", "")
+        for msg in history[-3:]
+        if msg.get("role") == "assistant"
+    )
+
+    # Translate inputs
+    user_lang = req.language or "hi"
+    from orchestrators.patient_orchestrator.sarvam_helper import translate_text, text_to_speech
+    english_text = await translate_text(text, user_lang, "en")
+    print(f"  -> Translated PeriodBot input from {user_lang} to en: '{english_text}'")
+
+    translated_history = []
+    for msg in history:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+        content_en = await translate_text(content, user_lang, "en") if user_lang != "en" else content
+        translated_history.append({"role": role, "content": content_en})
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        # Supabase logging
+        session_id = req.session_id
+        if not session_id and SUPABASE_URL:
+            session_record = await _log_to_supabase(client, "chat_sessions", {
+                "patient_id": req.patient_id,
+                "status": "active"
+            })
+            if session_record:
+                session_id = session_record.get("id")
+
+        if session_id:
+            await _log_to_supabase(client, "chat_messages", {
+                "session_id": session_id,
+                "sender_type": "user",
+                "content": text
+            })
 
         reply = ""
 
-        if is_report_turn:
+        if is_report_turn and text.strip():
+            # Run text through Model B (lab report interpreter)
             b_messages = [
                 {"role": "system", "content": MODEL_B_SYSTEM_PROMPT},
                 {"role": "user", "content": english_text},
@@ -238,45 +358,54 @@ Respond with ONLY valid JSON, no other text, in this exact schema:
                     timeout=20.0
                 )
                 raw = resp_b.json()["choices"][0]["message"]["content"]
+                try:
+                    report_result = json.loads(raw)
+                except json.JSONDecodeError:
+                    s, e = raw.find("{"), raw.rfind("}")
+                    report_result = json.loads(raw[s:e+1]) if s != -1 else {"report_summary": raw, "flag": "unclear", "notes": ""}
             except Exception as e:
                 print("Model B error:", e)
-                raw = '{"report_summary": "Error reading report.", "flag": "unclear", "notes": ""}'
-
-            try:
-                report_result = json.loads(raw)
-            except json.JSONDecodeError:
-                start, end = raw.find("{"), raw.rfind("}")
-                if start != -1 and end != -1:
-                    report_result = json.loads(raw[start:end + 1])
-                else:
-                    report_result = {"report_summary": raw, "flag": "unclear", "notes": ""}
+                report_result = {"report_summary": "Error reading report.", "flag": "unclear", "notes": ""}
 
             a_messages = [{"role": "system", "content": MODEL_A_SYSTEM_PROMPT}] + translated_history
-            a_messages.append({"role": "system", "content": f"REPORT_MODEL_OUTPUT: {json.dumps(report_result)}"})
+            a_messages.append({
+                "role": "system",
+                "content": f"REPORT_MODEL_OUTPUT: {json.dumps(report_result)}\nCRITICAL: Generate the Step 9 triage report now."
+            })
             a_messages.append({"role": "user", "content": "Here is my report."})
 
-            resp_a = await client.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"},
-                json={"model": MODEL_A_ID, "messages": a_messages},
-                timeout=30.0
-            )
-            reply = resp_a.json()["choices"][0]["message"]["content"]
+            try:
+                resp_a = await client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"},
+                    json={"model": MODEL_A_ID, "messages": a_messages},
+                    timeout=45.0
+                )
+                reply = resp_a.json()["choices"][0]["message"]["content"]
+            except Exception as e:
+                print("Model A (report) error:", e)
+                reply = "I received your report but had trouble generating the summary. Please try again."
         else:
+            # Normal conversation
             a_messages = [{"role": "system", "content": MODEL_A_SYSTEM_PROMPT}] + translated_history
             a_messages.append({"role": "user", "content": english_text})
 
-            resp_a = await client.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"},
-                json={"model": MODEL_A_ID, "messages": a_messages},
-                timeout=30.0
-            )
-            reply = resp_a.json()["choices"][0]["message"]["content"]
+            try:
+                resp_a = await client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"},
+                    json={"model": MODEL_A_ID, "messages": a_messages},
+                    timeout=30.0
+                )
+                reply = resp_a.json()["choices"][0]["message"]["content"]
+            except Exception as e:
+                print("Model A error:", e)
+                reply = "I'm having trouble connecting right now. Please try again."
 
+        # Post-process
         is_emergency = False
         if "[[HANDOFF:REPORT_MODEL]]" in reply:
-            reply = "Please type in the details from your report — for example, hormone values (LH, FSH, TSH, prolactin, testosterone), or the summary line from an ultrasound report."
+            reply = "Please paste your lab report values (e.g. TSH, LH, FSH) directly in the chat below."
         else:
             if "🚨" in reply or "IMMEDIATELY" in reply or ("Urgency Level" in reply and "🔴" in reply):
                 is_emergency = True
