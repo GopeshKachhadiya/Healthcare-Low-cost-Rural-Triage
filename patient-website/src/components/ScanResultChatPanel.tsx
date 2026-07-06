@@ -22,6 +22,19 @@ export default function ScanResultChatPanel({ condition, summary }: { condition:
       <div className="p-4 border-b border-ink/10 bg-white">
         <h3 className="font-semibold text-teal-700 text-lg">Condition Assistant</h3>
         <p className="text-xs text-ink/60 mt-1">Ask questions about your skin condition, remedies, or request a prescription.</p>
+        
+        {summary && (
+          <details className="mt-3 bg-teal-50/50 rounded-lg border border-teal-100 text-xs text-ink/80">
+            <summary className="font-semibold text-teal-700 p-3 cursor-pointer flex items-center gap-2 outline-none">
+              <ShieldAlert className="h-3 w-3" />
+              AI Diagnostic Summary (Click to expand)
+            </summary>
+            <div className="p-3 pt-0 max-h-32 overflow-y-auto">
+              {summary}
+            </div>
+          </details>
+        )}
+
         <Link 
           to="/appointments" 
           className="mt-3 w-full flex items-center justify-center gap-2 bg-teal-500 text-white rounded-lg py-2 text-sm font-semibold hover:bg-teal-600 transition"

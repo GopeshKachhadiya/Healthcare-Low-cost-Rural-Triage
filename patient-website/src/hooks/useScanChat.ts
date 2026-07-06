@@ -41,9 +41,10 @@ export function useScanChat(condition: string, summary: string) {
       const isEmergency = /emergency|severe|bleeding|breath|pain|die|urgent/i.test(text);
 
       const systemPrompt = `You are an AI specialized in skin conditions. The user has been diagnosed with ${condition}. 
+Patient Profile: Name is ${user?.name || "Unknown"}, Date of Birth is ${user?.dob || "Unknown"}.
 The user is located in the village of ${user?.village || "an unknown location"}. When providing remedies or suggesting doctors/hospitals, please take their location into account and suggest the best suitable facilities nearby.
 Your task is to ONLY answer questions regarding this skin condition, how to prevent it, and what remedies to use. 
-If the user asks to create a medical prescription, you may draft one but you MUST explicitly append: "\n\n[PENDING DOCTOR APPROVAL]". 
+If the user asks to create a medical prescription, you may draft one but you MUST explicitly append: "\n\n[PENDING DOCTOR APPROVAL]" and ensure you fill in the Patient Information (Name, Age, Location) using their actual profile details. 
 If the user's message indicates a severe emergency or red flag, start your response with "RED_FLAG:" so I can parse it.
 Do NOT answer questions about general knowledge, programming, or other unrelated topics. Keep responses empathetic but concise.`;
 
