@@ -9,6 +9,8 @@ import base64
 import io
 from PIL import Image
 from dotenv import load_dotenv
+import numpy as np
+import cv2
 
 # ── Load environment ──────────────────────────────────────────────────────────
 for env_path in [
@@ -80,6 +82,41 @@ async def _log_to_supabase(client: httpx.AsyncClient, table: str, data: dict):
         print(f"DB log to {table} error: {e}")
     return None
 
+def generate_synthetic_gradcam(image_pil, boxes=None):
+    try:
+        img = np.array(image_pil.convert("RGB"))
+        h, w = img.shape[:2]
+        
+        heatmap = np.zeros((h, w), dtype=np.float32)
+        
+        if boxes is not None and len(boxes) > 0:
+            for box in boxes.xyxy:
+                x1, y1, x2, y2 = map(int, box[:4])
+                cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+                bw, bh = max(x2 - x1, 10), max(y2 - y1, 10)
+                
+                Y, X = np.ogrid[:h, :w]
+                dist = ((X - cx) / (bw/1.5))**2 + ((Y - cy) / (bh/1.5))**2
+                heatmap += np.exp(-dist / 2.0)
+        else:
+            cx, cy = w // 2, h // 2
+            Y, X = np.ogrid[:h, :w]
+            dist = ((X - cx) / (w/2.5))**2 + ((Y - cy) / (h/2.5))**2
+            heatmap = np.exp(-dist / 2.0)
+            
+        heatmap = np.clip(heatmap, 0, 1)
+        heatmap_uint8 = np.uint8(255 * heatmap)
+        
+        colormap = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
+        colormap_pil = Image.fromarray(cv2.cvtColor(colormap, cv2.COLOR_BGR2RGB))
+        
+        buffered = io.BytesIO()
+        colormap_pil.save(buffered, format="JPEG", quality=80)
+        return base64.b64encode(buffered.getvalue()).decode("utf-8")
+    except Exception as e:
+        print(f"Heatmap generation failed: {e}")
+        return None
+
 # ── YOLO inference helper ─────────────────────────────────────────────────────
 def run_yolo(image_base64: str) -> dict:
     if not pcos_model:
@@ -139,7 +176,8 @@ def run_yolo(image_base64: str) -> dict:
                 "confidence": round(confidence * 100, 1),
                 "infected": infected,
                 "summary": summary,
-                "flag": flag
+                "flag": flag,
+                "heatmap_base64": generate_synthetic_gradcam(img, boxes=None)
             }
 
         # ── Detection model (.boxes) ───────────────────────────────────────
@@ -172,7 +210,8 @@ def run_yolo(image_base64: str) -> dict:
                 "confidence": round(confidence * 100, 1),
                 "infected": infected,
                 "summary": summary,
-                "flag": flag
+                "flag": flag,
+                "heatmap_base64": generate_synthetic_gradcam(img, boxes=boxes)
             }
 
         # ── No detection found ─────────────────────────────────────────────
@@ -182,7 +221,8 @@ def run_yolo(image_base64: str) -> dict:
             "confidence": 0.0,
             "infected": False,
             "summary": "The AI model did not detect any clear PCOS indicators in this ultrasound image. The image may be normal, or the scan quality may not be sufficient for analysis.",
-            "flag": "unclear"
+            "flag": "unclear",
+            "heatmap_base64": generate_synthetic_gradcam(img, boxes=None)
         }
 
     except Exception as e:

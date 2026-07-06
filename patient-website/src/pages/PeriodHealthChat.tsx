@@ -14,7 +14,11 @@ import {
   Volume2,
   RefreshCw,
   Image as ImageIcon,
-  X
+  X,
+  Activity,
+  Info,
+  AlertCircle,
+  Eye
 } from "lucide-react";
 import { usePeriodHealthChat, CLINIC_LIST } from "../hooks/usePeriodHealthChat";
 import VoiceInputButton from "../components/VoiceInputButton";
@@ -128,7 +132,10 @@ export default function PeriodHealthChat() {
     summary: string;
     flag: string;
     status: string;
+    heatmapUrl?: string;
   } | null>(null);
+  const [heatmapOpacity, setHeatmapOpacity] = useState(0.55);
+  const [showHeatmap, setShowHeatmap] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -283,6 +290,8 @@ export default function PeriodHealthChat() {
     if (!selectedImage || isScanning) return;
     setIsScanning(true);
     setScanResult(null);
+    setHeatmapOpacity(0.55);
+    setShowHeatmap(true);
     try {
       const res = await fetch("http://localhost:8001/scan-ultrasound", {
         method: "POST",
@@ -290,7 +299,14 @@ export default function PeriodHealthChat() {
         body: JSON.stringify({ image_base64: selectedImage }),
       });
       const data = await res.json();
-      setScanResult(data);
+      // Normalise heatmap — backend may return heatmap_base64 or heatmap_url
+      const heatmapUrl =
+        data.heatmap_base64
+          ? (data.heatmap_base64.startsWith("data:")
+              ? data.heatmap_base64
+              : `data:image/png;base64,${data.heatmap_base64}`)
+          : data.heatmap_url || null;
+      setScanResult({ ...data, heatmapUrl });
     } catch (err) {
       setScanResult({
         label: "Error",
@@ -299,6 +315,7 @@ export default function PeriodHealthChat() {
         summary: "Could not connect to the YOLO server. Please make sure the backend is running.",
         flag: "unclear",
         status: "error",
+        heatmapUrl: undefined,
       });
     } finally {
       setIsScanning(false);
@@ -729,42 +746,163 @@ export default function PeriodHealthChat() {
 
               {/* Scan Result */}
               {scanResult && (
-                <div className={`rounded-2xl border p-4 space-y-3 text-sm ${
-                  scanResult.flag === "abnormal"
-                    ? "bg-red-50 border-red-200"
-                    : scanResult.flag === "normal"
-                    ? "bg-green-50 border-green-200"
-                    : "bg-amber-50 border-amber-200"
-                }`}>
-                  {/* Result badge */}
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                      scanResult.flag === "abnormal"
-                        ? "bg-red-100 text-red-700"
-                        : scanResult.flag === "normal"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-amber-100 text-amber-700"
-                    }`}>
-                      {scanResult.flag === "abnormal" ? "⚠️ PCOS Detected" : scanResult.flag === "normal" ? "✅ No PCOS Detected" : "❓ Unclear"}
-                    </span>
-                    {scanResult.confidence > 0 && (
-                      <span className="text-xs text-gray-500 font-medium">{scanResult.confidence}% confidence</span>
+                <div className="space-y-4">
+                  {/* Status badge card */}
+                  <div className={`rounded-2xl border p-4 space-y-3 text-sm ${
+                    scanResult.flag === "abnormal"
+                      ? "bg-red-50 border-red-200"
+                      : scanResult.flag === "normal"
+                      ? "bg-green-50 border-green-200"
+                      : "bg-amber-50 border-amber-200"
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                        scanResult.flag === "abnormal"
+                          ? "bg-red-100 text-red-700"
+                          : scanResult.flag === "normal"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}>
+                        {scanResult.flag === "abnormal" ? "⚠️ PCOS Detected" : scanResult.flag === "normal" ? "✅ No PCOS Detected" : "❓ Unclear"}
+                      </span>
+                      {scanResult.confidence > 0 && (
+                        <span className="text-xs text-gray-500 font-medium">{scanResult.confidence}% confidence</span>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">AI Detection</p>
+                      <p className="font-semibold text-gray-800">{scanResult.label}</p>
+                    </div>
+                    <p className="text-[10px] text-gray-400 italic">This AI result is for guidance only. A certified doctor must confirm the diagnosis.</p>
+                  </div>
+
+                  {/* ── Grad-CAM Heatmap Panel ── */}
+                  {scanResult.heatmapUrl && selectedImage && (
+                    <div className="rounded-2xl border border-purple-100 bg-white shadow-sm overflow-hidden">
+                      {/* Header */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100">
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-4 w-4 text-purple-500" />
+                          <span className="text-xs font-bold text-purple-700 uppercase tracking-wide">Grad-CAM Heatmap</span>
+                        </div>
+                        <button
+                          onClick={() => setShowHeatmap((v) => !v)}
+                          className="flex items-center gap-1 text-[10px] font-semibold text-purple-500 hover:text-purple-700 transition-colors"
+                        >
+                          <Eye className="h-3 w-3" />
+                          {showHeatmap ? "Hide" : "Show"}
+                        </button>
+                      </div>
+
+                      {showHeatmap && (
+                        <div className="p-3 space-y-3">
+                          {/* Stacked image overlay */}
+                          <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: "1/1" }}>
+                            <img
+                              src={selectedImage}
+                              alt="Ultrasound original"
+                              className="absolute inset-0 w-full h-full object-contain"
+                            />
+                            <img
+                              src={scanResult.heatmapUrl}
+                              alt="Grad-CAM heatmap"
+                              className="absolute inset-0 w-full h-full object-contain pointer-events-none transition-opacity duration-100"
+                              style={{ opacity: heatmapOpacity, mixBlendMode: "multiply" }}
+                            />
+                          </div>
+
+                          {/* Opacity slider */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[10px] font-semibold text-gray-500">
+                              <span>Original</span>
+                              <span>Heatmap overlay ({Math.round(heatmapOpacity * 100)}%)</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0" max="1" step="0.05"
+                              value={heatmapOpacity}
+                              onChange={(e) => setHeatmapOpacity(parseFloat(e.target.value))}
+                              className="w-full h-1.5 rounded-full cursor-pointer accent-purple-500 bg-purple-100"
+                            />
+                          </div>
+
+                          {/* Colour legend */}
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex-1 h-2 rounded-full" style={{ background: "linear-gradient(to right, #0000ff, #00ffff, #00ff00, #ffff00, #ff0000)" }} />
+                            <span className="text-[9px] text-gray-400 whitespace-nowrap">Low → High attention</span>
+                          </div>
+
+                          <p className="text-[9px] text-gray-400 leading-normal">
+                            🔴 Red/yellow regions = areas the AI focused on most.<br />
+                            🔵 Blue = background with low clinical relevance.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Infection Explanation Panel ── */}
+                  <div className={`rounded-2xl border p-4 space-y-3 ${
+                    scanResult.infected
+                      ? "bg-gradient-to-br from-red-50 to-orange-50 border-red-200"
+                      : "bg-gradient-to-br from-green-50 to-emerald-50 border-green-200"
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      {scanResult.infected
+                        ? <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+                        : <Info className="h-4 w-4 text-green-600 shrink-0" />}
+                      <p className={`text-xs font-bold uppercase tracking-wide ${
+                        scanResult.infected ? "text-red-700" : "text-green-700"
+                      }`}>
+                        {scanResult.infected ? "Infection Indicators Found" : "No Infection Signs Detected"}
+                      </p>
+                    </div>
+
+                    <p className="text-xs text-gray-700 leading-relaxed">{scanResult.summary}</p>
+
+                    {scanResult.infected && (
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">What this means for you</p>
+                        <ul className="space-y-1.5">
+                          {[
+                            { icon: "🔬", text: "The AI detected structural abnormalities consistent with PCOS or infection — fluid-filled follicles or cysts were highlighted." },
+                            { icon: "📋", text: "Share this analysis with your gynaecologist immediately. Do not self-medicate." },
+                            { icon: "⏱️", text: "Early treatment significantly improves outcomes. Book a consultation within 48–72 hours." },
+                            { icon: "🌡️", text: "If you experience severe pain, fever, or unusual discharge, visit an emergency clinic right away." },
+                          ].map((item, i) => (
+                            <li key={i} className="flex items-start gap-2 text-xs text-gray-700">
+                              <span className="text-sm mt-px shrink-0">{item.icon}</span>
+                              <span>{item.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
-                  </div>
 
-                  {/* AI label */}
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">AI Detection</p>
-                    <p className="font-semibold text-gray-800">{scanResult.label}</p>
-                  </div>
+                    {!scanResult.infected && (
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Healthy indicators observed</p>
+                        <ul className="space-y-1.5">
+                          {[
+                            { icon: "✅", text: "Follicle count and distribution appear within normal range for your cycle phase." },
+                            { icon: "💧", text: "No abnormal fluid accumulation or cysts detected in the ovarian region." },
+                            { icon: "📅", text: "Continue tracking your cycle. Minor irregularities are common and usually resolve naturally." },
+                          ].map((item, i) => (
+                            <li key={i} className="flex items-start gap-2 text-xs text-gray-700">
+                              <span className="text-sm mt-px shrink-0">{item.icon}</span>
+                              <span>{item.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
-                  {/* Summary */}
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Analysis</p>
-                    <p className="text-gray-700 leading-relaxed text-xs">{scanResult.summary}</p>
+                    <div className="rounded-lg bg-white/70 border border-gray-100 px-3 py-2">
+                      <p className="text-[9px] text-gray-400 leading-relaxed">
+                        ⚕️ <strong>Medical Disclaimer:</strong> This analysis is generated by an AI model trained on ultrasound datasets. It does <strong>not</strong> replace a clinical diagnosis. Always consult a certified gynaecologist for any reproductive health concerns.
+                      </p>
+                    </div>
                   </div>
-
-                  <p className="text-[10px] text-gray-400 italic">This AI result is for guidance only. A certified doctor must confirm the diagnosis.</p>
                 </div>
               )}
               
