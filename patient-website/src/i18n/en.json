@@ -1,6 +1,6 @@
 {
   "home": {
-    "title": "ArogyaMitra",
+    "title": "Anvaya",
     "subtitle": "Your Health, in Your Language",
     "welcome": "Welcome back",
     "quickActions": "Quick Health Services",
@@ -11,7 +11,7 @@
     "findClinic": "Locate Nearby PHC"
   },
   "chat": {
-    "title": "Ask ArogyaMitra",
+    "title": "Ask Anvaya",
     "placeholder": "Type symptoms or medicines...",
     "recording": "Recording translation..."
   },

@@ -82,7 +82,7 @@ export default function Home() {
           {t("home.subtitle")}
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-base text-ink/70">
-          Speak your symptoms, scan a photo, or ask a question — ArogyaMitra
+          Speak your symptoms, scan a photo, or ask a question — Anvaya
           helps you understand what to do next, and connects you to a doctor
           when it matters.
         </p>

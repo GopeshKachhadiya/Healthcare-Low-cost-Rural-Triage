@@ -146,7 +146,7 @@ async def get_dynamic_summary(scan_type: str, top_class: str, confidence: float)
                             {
                                 "role": "system",
                                 "content": (
-                                    "You are ArogyaMitra, an AI medical screener. A patient has undergone a "
+                                    "You are Anvaya, an AI medical screener. A patient has undergone a "
                                     f"{scan_type} screening scan. The computer vision model classified this as "
                                     f"'{top_class}' with {confidence * 100}% confidence.\n\n"
                                     "Provide a brief, professional, and empathetic clinical explanation "

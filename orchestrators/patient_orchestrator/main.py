@@ -168,8 +168,8 @@ async def route_patient_request(req: PatientRequest):
                                         "https://openrouter.ai/api/v1/chat/completions",
                                         headers={
                                             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                                            "HTTP-Referer": "https://arogyamitra.health",
-                                            "X-Title": "ArogyaMitra Triage"
+                                            "HTTP-Referer": "https://anvaya.health",
+                                            "X-Title": "Anvaya Triage"
                                         },
                                         json={
                                             "model": "meta-llama/llama-3.1-8b-instruct",
@@ -212,7 +212,7 @@ async def route_patient_request(req: PatientRequest):
                 condition = req.payload.get("condition")
                 
                 if condition:
-                    system_prompt = f"""You are SATRIA, an empathetic health assistant for ArogyaMitra.
+                    system_prompt = f"""You are SATRIA, an empathetic health assistant for Anvaya.
 The patient has just completed an AI scan which indicated a possible condition: '{condition}'.
 Your job is to discuss this condition with the patient. Answer their questions, provide standard care precautions, explain symptoms to watch out for, and advise them whether they need to see a doctor.
 Rules:
@@ -221,7 +221,7 @@ Rules:
 - Ask only ONE question at a time or provide simple answers.
 - Encourage them to visit the local Primary Health Centre (PHC) for a formal clinical evaluation to confirm the AI screening result."""
                 else:
-                    system_prompt = """You are SATRIA, a health assistant for ArogyaMitra.
+                    system_prompt = """You are SATRIA, a health assistant for Anvaya.
 Your job is to systematically gather the following information by asking EXACTLY ONE QUESTION at a time:
 1. Basic identity (ask for patient's full name and age)
 2. Main complaint (what is bothering them most)
@@ -251,8 +251,8 @@ RULES:
                             "https://openrouter.ai/api/v1/chat/completions",
                             headers={
                                 "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                                "HTTP-Referer": "https://arogyamitra.health",
-                                "X-Title": "ArogyaMitra Rural Health Assistant",
+                                "HTTP-Referer": "https://anvaya.health",
+                                "X-Title": "Anvaya Rural Health Assistant",
                                 "Content-Type": "application/json"
                             },
                             json={
@@ -343,7 +343,7 @@ RULES:
                     else:
                         lang_instruction = "CRITICAL: You MUST respond ONLY in English. Do not use Hindi, Gujarati, or any other language."
 
-                    care_system = f"""You are VAIDYA, a compassionate clinical triage assistant for ArogyaMitra, a rural healthcare platform in India. {lang_instruction}
+                    care_system = f"""You are VAIDYA, a compassionate clinical triage assistant for Anvaya, a rural healthcare platform in India. {lang_instruction}
 
 You have just received the FULL conversation between a health intake assistant and a patient.
 Your job is to provide SPECIFIC, GROUNDED medical first-aid advice based ONLY on what the patient has actually said.
@@ -406,8 +406,8 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
                         "https://openrouter.ai/api/v1/chat/completions",
                         headers={
                             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                            "HTTP-Referer": "https://arogyamitra.health",
-                            "X-Title": "ArogyaMitra Care Advisor",
+                            "HTTP-Referer": "https://anvaya.health",
+                            "X-Title": "Anvaya Care Advisor",
                             "Content-Type": "application/json"
                         },
                         json={
@@ -474,8 +474,8 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
                                 "https://openrouter.ai/api/v1/chat/completions",
                                 headers={
                                     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                                    "HTTP-Referer": "https://arogyamitra.health",
-                                    "X-Title": "ArogyaMitra SBAR Scribe"
+                                    "HTTP-Referer": "https://anvaya.health",
+                                    "X-Title": "Anvaya SBAR Scribe"
                                 },
                                 json={
                                     "model": "meta-llama/llama-3.3-70b-instruct",

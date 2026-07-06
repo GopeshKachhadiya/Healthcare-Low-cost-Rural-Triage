@@ -29,7 +29,7 @@ export default function Navbar() {
             {isStaff ? <Activity className="h-5 w-5" /> : "அ"}
           </span>
           <span className="font-display text-xl font-semibold text-teal-700">
-            {isStaff ? "Hospital Panel" : "ArogyaMitra"}
+            {isStaff ? "Hospital Panel" : "Anvaya"}
           </span>
         </Link>
 

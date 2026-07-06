@@ -8,7 +8,7 @@ export default function Footer() {
         qualified healthcare professional for confirmation and treatment.
       </div>
       <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-2 px-5 pb-6 pt-2 text-xs text-teal-200 sm:flex-row">
-        <p>© 2026 ArogyaMitra — AI Triage Companion</p>
+        <p>© 2026 Anvaya — AI Triage Companion</p>
         <p>Works offline · Available in Hindi, Tamil, English</p>
       </div>
     </footer>

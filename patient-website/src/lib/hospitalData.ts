@@ -1,5 +1,5 @@
 // ============================================================
-// ArogyaMitra Hospital Panel — Mock Data
+// Anvaya Hospital Panel — Mock Data
 // mock-data.js — All simulated patients, cases, AI results
 // ============================================================
 
@@ -13,7 +13,7 @@ export const MOCK_DB = {
     specialty: 'General Medicine',
     facility_id: 'fac-001',
     facility_name: 'PHC Rampur, Uttar Pradesh',
-    email: 'priya.sharma@arogyamitra.in',
+    email: 'priya.sharma@anvaya.in',
     phone: '+91 98765 43210',
     reg_no: 'MCI-2018-UP-48321',
   },

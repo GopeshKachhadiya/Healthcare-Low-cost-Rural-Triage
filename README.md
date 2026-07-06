@@ -1,8 +1,8 @@
-# 🏥 ArogyaMitra — AI-Powered Low-Cost Rural Healthcare Triage Platform
+# 🏥 Anvaya — AI-Powered Low-Cost Rural Healthcare Triage Platform
 
 > **Bringing hospital-grade diagnostics to the last mile — without a doctor, clinic, or internet connection.**
 
-ArogyaMitra (meaning *"Health Friend"* in Hindi) is a full-stack, multi-agent AI platform purpose-built for rural healthcare access in India. It bridges the gap between underserved village populations and the formal healthcare system by putting a triage engine, computer-vision diagnostic scanner, and specialist chatbot directly in a patient's hand — on a ₹3,000 smartphone.
+Anvaya (meaning *"Health Friend"* in Hindi) is a full-stack, multi-agent AI platform purpose-built for rural healthcare access in India. It bridges the gap between underserved village populations and the formal healthcare system by putting a triage engine, computer-vision diagnostic scanner, and specialist chatbot directly in a patient's hand — on a ₹3,000 smartphone.
 
 ---
 
@@ -15,7 +15,7 @@ India has **1 doctor per 1,456 people** in rural areas (WHO recommends 1:1,000).
 - Diagnoses are missed, misread, or never written down
 - Women's health — especially menstrual disorders — is heavily stigmatised and under-reported
 
-**ArogyaMitra eliminates the "first mile" barrier** by performing triage, visual screening, and symptom-guided intake entirely on the patient's device, then routing the case to the correct care level automatically.
+**Anvaya eliminates the "first mile" barrier** by performing triage, visual screening, and symptom-guided intake entirely on the patient's device, then routing the case to the correct care level automatically.
 
 ---
 
@@ -680,7 +680,7 @@ Every AI decision shows: (a) a visual heatmap of *where* the model looked, (b) a
 Symptom text → AI triage → visual scan → SBAR clinical report → appointment booking → prescription → referral. All in one continuous session on one device. No handoffs, no printed forms, no separate booking calls.
 
 ### 5. Government Infrastructure Alignment
-The 4-tier colour system mirrors GoI NHM triage protocols. ABDM/ABHA integration is built in. Bhashini — the Government of India's own multilingual AI API — is the translation layer. Facility data maps to real Sub-Centre → PHC → CHC → District Hospital hierarchy. ArogyaMitra augments India's existing public health infrastructure.
+The 4-tier colour system mirrors GoI NHM triage protocols. ABDM/ABHA integration is built in. Bhashini — the Government of India's own multilingual AI API — is the translation layer. Facility data maps to real Sub-Centre → PHC → CHC → District Hospital hierarchy. Anvaya augments India's existing public health infrastructure.
 
 ---
 
@@ -722,4 +722,4 @@ Built for the **Maverick 2026 Hackathon**. All model weights are either custom-t
 
 Built with ❤️ for the 600 million who deserve better healthcare.
 
-> *"Technology should not be a privilege. ArogyaMitra is our answer to the last mile."*
+> *"Technology should not be a privilege. Anvaya is our answer to the last mile."*

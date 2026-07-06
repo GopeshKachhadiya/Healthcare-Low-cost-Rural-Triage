@@ -58,7 +58,7 @@ export default function Login() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      login("staff@arogyamitra.in", role === "doctor" ? "Dr. Priya Sharma" : role === "nurse" ? "ANM Kamla Devi" : "District Admin", role);
+      login("staff@anvaya.in", role === "doctor" ? "Dr. Priya Sharma" : role === "nurse" ? "ANM Kamla Devi" : "District Admin", role);
       navigate("/hospital");
     }, 1000);
   };
@@ -72,7 +72,7 @@ export default function Login() {
         login("+91 9876543210", "Ramesh Kumar", "patient");
         navigate("/home");
       } else {
-        login("staff@arogyamitra.in", demoRole === "doctor" ? "Dr. Priya Sharma" : demoRole === "nurse" ? "ANM Kamla Devi" : "District Admin", demoRole);
+        login("staff@anvaya.in", demoRole === "doctor" ? "Dr. Priya Sharma" : demoRole === "nurse" ? "ANM Kamla Devi" : "District Admin", demoRole);
         navigate("/hospital");
       }
     }, 800);
@@ -84,7 +84,7 @@ export default function Login() {
         <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-teal-500 font-display text-2xl text-white shadow-md shadow-teal-500/20">
           अ
         </span>
-        <h1 className="mt-4 font-display text-2xl font-bold text-teal-700">ArogyaMitra Login</h1>
+        <h1 className="mt-4 font-display text-2xl font-bold text-teal-700">Anvaya Login</h1>
         <p className="mt-1.5 text-sm text-ink/60">आरोग्यमित्र — आपकी सेहत, आपकी भाषा में</p>
       </div>
 
@@ -247,7 +247,7 @@ export default function Login() {
             <label className="mb-1 block text-xs font-semibold text-ink">Email / Medical Council ID</label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-ink/40"><Mail className="h-4 w-4" /></span>
-              <input type="email" defaultValue="priya.sharma@arogyamitra.in" className="w-full rounded-lg border border-ink/20 bg-paper py-2.5 pl-10 pr-4 text-sm text-ink focus:border-teal-500 focus:outline-none" />
+              <input type="email" defaultValue="priya.sharma@anvaya.in" className="w-full rounded-lg border border-ink/20 bg-paper py-2.5 pl-10 pr-4 text-sm text-ink focus:border-teal-500 focus:outline-none" />
             </div>
           </div>
           <div>

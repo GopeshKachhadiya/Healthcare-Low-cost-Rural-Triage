@@ -9,7 +9,7 @@ export interface ChatBotResponse {
   isRedFlag: boolean;
 }
 
-export async function askArogyaMitraRAG(query: string, language: string): Promise<ChatBotResponse> {
+export async function askAnvayaRAG(query: string, language: string): Promise<ChatBotResponse> {
   // Simulates querying vector DB index using n8n orchestrator
   return new Promise((resolve) => {
     setTimeout(() => {

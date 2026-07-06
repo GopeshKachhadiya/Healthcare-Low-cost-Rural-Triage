@@ -47,7 +47,7 @@ export default function History() {
           {
             type: "chat" as const,
             id: "chat-log",
-            title: `ArogyaMitra Chat Session`,
+            title: `Anvaya Chat Session`,
             meta: `${chatHistory.length} messages exchanged`,
             date: new Date(),
             tier: (chatHistory.some((m) => m.isRedFlag) ? "red" : "green") as any,

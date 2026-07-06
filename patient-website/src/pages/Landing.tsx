@@ -10,20 +10,20 @@ gsap.registerPlugin(ScrollTrigger);
 
 const FAQS = [
   {
-    question: "What exactly does ArogyaMitra do?",
-    answer: "ArogyaMitra is an intelligent health companion that helps you understand your symptoms using simple language or photos. It provides medical-grade guidance and helps connect you to local clinics if needed."
+    question: "What exactly does Anvaya do?",
+    answer: "Anvaya is an intelligent health companion that helps you understand your symptoms using simple language or photos. It provides medical-grade guidance and helps connect you to local clinics if needed."
   },
   {
-    question: "Who can use ArogyaMitra?",
+    question: "Who can use Anvaya?",
     answer: "Anyone looking for quick, reliable health guidance. Whether you are a first-time parent, a rural farmer, or someone seeking sensitive care, our platform is designed to be accessible and easy to use."
   },
   {
     question: "Do I need technical skills to use the app?",
-    answer: "Not at all. You can interact with ArogyaMitra simply by speaking into your phone in your preferred language. The voice-first interface makes it incredibly easy to use."
+    answer: "Not at all. You can interact with Anvaya simply by speaking into your phone in your preferred language. The voice-first interface makes it incredibly easy to use."
   },
   {
     question: "Can it connect me to local doctors?",
-    answer: "Yes! ArogyaMitra is partnered with local Primary Health Centres (PHCs) and district hospitals to seamlessly refer you and help you book appointments when medical attention is required."
+    answer: "Yes! Anvaya is partnered with local Primary Health Centres (PHCs) and district hospitals to seamlessly refer you and help you book appointments when medical attention is required."
   },
   {
     question: "Is my health data secure and private?",
@@ -141,7 +141,7 @@ export default function Landing() {
               அ
             </span>
             <span className="font-display text-xl font-semibold text-[#1C2B27]">
-              ArogyaMitra
+              Anvaya
             </span>
           </div>
           
@@ -251,7 +251,7 @@ export default function Landing() {
         <section id="how-it-works" className="reveal bg-[#FAF6EF] py-20 lg:py-28">
           <div className="mx-auto max-w-7xl px-5 text-center">
             <h2 className="font-display text-3xl font-semibold text-[#1C2B27]">
-              How ArogyaMitra Works
+              How Anvaya Works
             </h2>
             <p className="mt-4 text-[#5C6B66]">A simple, secure path from symptom to care.</p>
             
@@ -381,7 +381,7 @@ export default function Landing() {
                     <p className="text-xs text-[#5C6B66]">First-time Mother</p>
                   </div>
                 </div>
-                <p className="text-[#1C2B27] italic">"When my baby developed a rash in the middle of the night, I was terrified. ArogyaMitra helped me understand it was a common heat rash and guided me on what to do until the clinic opened."</p>
+                <p className="text-[#1C2B27] italic">"When my baby developed a rash in the middle of the night, I was terrified. Anvaya helped me understand it was a common heat rash and guided me on what to do until the clinic opened."</p>
               </div>
               
               <div className="rounded-2xl border border-[#E5DFD3] bg-white p-8 text-left shadow-sm">
@@ -440,7 +440,7 @@ export default function Landing() {
             <div className="md:col-span-1">
               <div className="flex items-center gap-2 mb-4">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1B4D3E] font-display text-xs text-white">அ</span>
-                <span className="font-display text-lg font-semibold text-[#1C2B27]">ArogyaMitra</span>
+                <span className="font-display text-lg font-semibold text-[#1C2B27]">Anvaya</span>
               </div>
               <p className="text-sm text-[#5C6B66]">
                 Bridging the gap between symptoms and care, accessible to everyone, everywhere.
@@ -477,9 +477,9 @@ export default function Landing() {
           </div>
           
           <div className="mt-16 border-t border-[#E5DFD3] pt-8 text-center md:flex md:items-center md:justify-between md:text-left">
-            <p className="text-sm text-[#5C6B66]">© 2026 ArogyaMitra. All rights reserved.</p>
+            <p className="text-sm text-[#5C6B66]">© 2026 Anvaya. All rights reserved.</p>
             <p className="mt-4 text-xs leading-relaxed text-[#5C6B66] md:mt-0 md:max-w-xl">
-              <strong className="font-semibold">Disclaimer:</strong> ArogyaMitra provides guidance and is not a substitute for professional medical diagnosis or treatment. Always consult a healthcare professional for medical advice.
+              <strong className="font-semibold">Disclaimer:</strong> Anvaya provides guidance and is not a substitute for professional medical diagnosis or treatment. Always consult a healthcare professional for medical advice.
             </p>
           </div>
         </div>

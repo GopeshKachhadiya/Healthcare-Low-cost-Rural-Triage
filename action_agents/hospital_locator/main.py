@@ -39,7 +39,7 @@ async def locate_hospital(req: LocationRequest):
         """
         
         headers = {
-            "User-Agent": "ArogyaMitra-HospitalLocator/1.0"
+            "User-Agent": "Anvaya-HospitalLocator/1.0"
         }
         response = requests.post(overpass_url, data={'data': overpass_query}, headers=headers, timeout=10)
         

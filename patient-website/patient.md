@@ -1,11 +1,11 @@
-# Patient Panel — ArogyaMitra
+# Patient Panel — Anvaya
 
 **Module Owner:** Patient / Consumer-Facing Interface  
-**Parent Spec:** [arogyamitra.md](file:///f:/Maverick2026/arogyamitra.md)  
+**Parent Spec:** [anvaya.md](file:///f:/Maverick2026/anvaya.md)  
 **Depends on:** Supabase Backend, n8n Automation, AI/ML Services  
 **Feeds into:** Hospital Panel (covered in `hospital.md`)
 
-> This document covers **what the Patient Panel does, how every feature works internally, which agents handle what, and which datasets power the models**. Architecture diagrams and database schema live in `arogyamitra.md` — this file is purely about functionality, agent design, data flow, and implementation detail.
+> This document covers **what the Patient Panel does, how every feature works internally, which agents handle what, and which datasets power the models**. Architecture diagrams and database schema live in `anvaya.md` — this file is purely about functionality, agent design, data flow, and implementation detail.
 
 ---
 
@@ -33,7 +33,7 @@
 
 ## 1. Panel Overview
 
-The Patient Panel is the **consumer-facing surface** of ArogyaMitra. A patient (or a health worker assisting a patient) can:
+The Patient Panel is the **consumer-facing surface** of Anvaya. A patient (or a health worker assisting a patient) can:
 
 - **Upload an image** (skin lesion, rash, wound, eye condition) and receive an AI-powered preliminary screening result with disease classification, confidence score, and a Grad-CAM heatmap showing what the model looked at.
 - **Chat with a RAG-grounded medical assistant** that answers questions about diseases, medicines, symptoms, dosages, side-effects, and home-care — all grounded in cited medical literature, never hallucinated.
@@ -55,7 +55,7 @@ The panel is a **PWA (Progressive Web App)** — installable, works fully offlin
 |---|---|---|
 | **Phone OTP** (primary) | Patient enters phone number → receives OTP via SMS → verified → session created via Supabase Auth | Minimal — just read 4–6 digits |
 | **Health Worker Assisted** | ASHA/ANM logs in with their own credentials → registers patient under their facility → patient gets a linked profile | None — health worker handles everything |
-| **WhatsApp Bot** (zero-install) | Patient sends "Hi" to ArogyaMitra's WhatsApp number → bot collects phone number → creates/links profile | None — conversational |
+| **WhatsApp Bot** (zero-install) | Patient sends "Hi" to Anvaya's WhatsApp number → bot collects phone number → creates/links profile | None — conversational |
 
 ### What Happens at First Login
 
@@ -345,7 +345,7 @@ When an appointment is created, the following data packet is assembled and pushe
 
 ## 6. Feature 4 — Patient History & Timeline
 
-Every interaction the patient has with ArogyaMitra is recorded into a **longitudinal timeline** — creating a portable health record that follows the patient across visits and facilities.
+Every interaction the patient has with Anvaya is recorded into a **longitudinal timeline** — creating a portable health record that follows the patient across visits and facilities.
 
 ### 6.1 What Gets Recorded
 
@@ -503,7 +503,7 @@ When a patient's case is flagged Orange or Red (or they manually search):
 ### 9.2 Smart Re-Escalation
 
 When a patient responds to a follow-up message:
-- The response is parsed for **red-flag keywords** (same list as the initial symptom red-flag check in §10.1 of `arogyamitra.md`).
+- The response is parsed for **red-flag keywords** (same list as the initial symptom red-flag check in §10.1 of `anvaya.md`).
 - If red-flag detected → a new `risk_flags` row is created at Orange/Red tier → n8n fires escalation to the doctor.
 - If response indicates improvement → logged, no further action.
 - If no response after 2 attempts → flagged for health worker to check in person.
