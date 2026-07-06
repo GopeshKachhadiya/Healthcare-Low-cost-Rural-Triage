@@ -27,7 +27,7 @@ export function useScanChat(condition: string, summary: string) {
       setMessages((prev) => [...prev, newUserMsg]);
       setIsTyping(true);
 
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+      const apiKey = (import.meta as any).env.VITE_GROQ_API_KEY;
       if (!apiKey) {
         setMessages((prev) => [
           ...prev,
