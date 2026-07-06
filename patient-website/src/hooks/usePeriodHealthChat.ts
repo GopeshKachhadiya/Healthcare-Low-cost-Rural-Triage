@@ -19,6 +19,7 @@ export interface PeriodMessage {
   isRedFlag?: boolean;
   isReport?: boolean;   // report analysis block
   isBooking?: boolean;  // final booking confirmation
+  imageUrl?: string;    // attached image
 }
 
 interface OpenRouterMessage {
@@ -44,7 +45,7 @@ export function usePeriodHealthChat() {
     ]);
   }, []);
 
-  const callBackend = async (text: string) => {
+  const callBackend = async (text: string, imageBase64?: string) => {
     const res = await fetch("http://localhost:8001/route", {
       method: "POST",
       headers: {
@@ -57,6 +58,7 @@ export function usePeriodHealthChat() {
         payload: {
           text,
           history: conversationHistory.current,
+          image_base64: imageBase64,
         },
       }),
     });
@@ -77,18 +79,20 @@ export function usePeriodHealthChat() {
   };
 
   const sendMessage = useCallback(
-    async (text: string) => {
-      if (!text.trim() || isLoading) return;
+    async (text: string, imageBase64?: string) => {
+      if (!text.trim() && !imageBase64) return;
+      if (isLoading) return;
       
-      addMessage({ role: "user", content: text });
+      addMessage({ role: "user", content: text || "[Image Attached]", imageUrl: imageBase64 });
       
       setIsLoading(true);
 
       try {
-        const { reply, isEmergency } = await callBackend(text);
+        const { reply, isEmergency } = await callBackend(text, imageBase64);
 
         // Check for specific backend responses to update local state
-        const isAwaitingReport = reply.includes("Please type in the details from your report");
+        const isAwaitingReport = reply.includes("Ultrasound Analysis panel on the right side") || 
+                                  reply.includes("Please type in the details from your report");
         const isBookingConfirm = /appointment has been successfully booked/i.test(reply);
 
         addMessage({
@@ -120,14 +124,15 @@ export function usePeriodHealthChat() {
   );
 
   const submitReport = useCallback(
-    async (reportText: string) => {
-      if (!reportText.trim() || isLoading) return;
+    async (reportText: string, imageBase64?: string) => {
+      if (!reportText.trim() && !imageBase64) return;
+      if (isLoading) return;
       
-      addMessage({ role: "user", content: reportText, isReport: true });
+      addMessage({ role: "user", content: reportText || "[Image Attached]", isReport: true, imageUrl: imageBase64 });
       setIsLoading(true);
 
       try {
-        const { reply, isEmergency } = await callBackend(reportText);
+        const { reply, isEmergency } = await callBackend(reportText, imageBase64);
 
         const isBookingConfirm = /appointment has been successfully booked/i.test(reply);
 

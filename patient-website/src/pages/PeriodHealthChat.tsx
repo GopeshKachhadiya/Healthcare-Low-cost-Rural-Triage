@@ -12,6 +12,8 @@ import {
   CalendarCheck,
   ClipboardList,
   RefreshCw,
+  Image as ImageIcon,
+  X
 } from "lucide-react";
 import { usePeriodHealthChat, CLINIC_LIST } from "../hooks/usePeriodHealthChat";
 
@@ -114,8 +116,19 @@ export default function PeriodHealthChat() {
     usePeriodHealthChat();
   const [inputText, setInputText] = useState("");
   const [showClinicChips, setShowClinicChips] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<{
+    label: string;
+    confidence: number;
+    infected: boolean;
+    summary: string;
+    flag: string;
+    status: string;
+  } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-scroll on new message
   useEffect(() => {
@@ -151,15 +164,56 @@ export default function PeriodHealthChat() {
 
   const handleSend = () => {
     const text = inputText.trim();
-    if (!text) return;
+    if (!text && !selectedImage) return;
     setInputText("");
+    const imgToSend = selectedImage;
+    setSelectedImage(null);
     setShowClinicChips(false);
+    
     if (phase === "AWAITING_REPORT") {
-      submitReport(text);
+      submitReport(text, imgToSend || undefined);
     } else {
-      sendMessage(text);
+      sendMessage(text, imgToSend || undefined);
     }
     inputRef.current?.focus();
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result as string);
+        setScanResult(null); // reset previous result
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const analyzeScan = async () => {
+    if (!selectedImage || isScanning) return;
+    setIsScanning(true);
+    setScanResult(null);
+    try {
+      const res = await fetch("http://localhost:8001/scan-ultrasound", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_base64: selectedImage }),
+      });
+      const data = await res.json();
+      setScanResult(data);
+    } catch (err) {
+      setScanResult({
+        label: "Error",
+        confidence: 0,
+        infected: false,
+        summary: "Could not connect to the YOLO server. Please make sure the backend is running.",
+        flag: "unclear",
+        status: "error",
+      });
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   const handleClinicSelect = (val: string) => {
@@ -241,9 +295,15 @@ export default function PeriodHealthChat() {
         </p>
       </div>
 
-      {/* ── Chat area ─────────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
-        <div className="mx-auto max-w-3xl space-y-4">
+      {/* ── Main Layout with Side Panel ────────────────────────────────────── */}
+      <div className="flex flex-1 overflow-hidden">
+        
+        {/* ── Left Column: Chat Area ────────────────────────────────────────── */}
+        <div className="flex flex-col flex-1 relative">
+          
+          {/* ── Chat history ────────────────────────────────────────────────── */}
+          <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+            <div className="mx-auto max-w-3xl space-y-4">
 
           {/* Empty state with starters */}
           {messages.length === 0 && !isLoading && (
@@ -334,7 +394,12 @@ export default function PeriodHealthChat() {
                       }`}
                   >
                     {isUser ? (
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                      <div className="flex flex-col gap-2">
+                        {msg.imageUrl && (
+                          <img src={msg.imageUrl} alt="Uploaded report" className="max-w-[200px] rounded-lg" />
+                        )}
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      </div>
                     ) : (
                       <RenderMarkdown text={msg.content} />
                     )}
@@ -385,32 +450,6 @@ export default function PeriodHealthChat() {
       <div className="flex-shrink-0 border-t border-rose-100 bg-white/80 backdrop-blur-md px-4 py-3">
         <div className="mx-auto max-w-3xl">
           {/* Phase hint */}
-          {phase === "AWAITING_REPORT" && (
-            <div className="mb-2 flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
-              <FileText className="h-3.5 w-3.5 shrink-0" />
-              <span>
-                <strong>Paste your report below</strong> — e.g. "TSH: 6.2 mIU/L,
-                LH: 12 mIU/mL, FSH: 5 mIU/mL" or any ultrasound summary text.
-              </span>
-            </div>
-          )}
-
-          {phase === "DONE" && (
-            <div className="mb-2 flex items-center justify-between gap-2 text-xs text-green-700 bg-green-50 border border-green-100 rounded-xl px-3 py-2">
-              <span className="flex items-center gap-1.5">
-                <CalendarCheck className="h-3.5 w-3.5" />
-                Your appointment is confirmed. Have a safe visit!
-              </span>
-              <button
-                onClick={clearChat}
-                className="flex items-center gap-1 font-semibold hover:text-green-900 transition-colors"
-              >
-                <RefreshCw className="h-3 w-3" />
-                Start over
-              </button>
-            </div>
-          )}
-
           <div className="flex gap-2 items-end">
             <input
               ref={inputRef}
@@ -422,7 +461,7 @@ export default function PeriodHealthChat() {
               disabled={isLoading || phase === "DONE"}
               placeholder={
                 phase === "AWAITING_REPORT"
-                  ? "Paste hormone values or ultrasound summary here…"
+                  ? "Paste hormone values or upload ultrasound image..."
                   : phase === "DONE"
                     ? "Appointment booked — start a new chat to ask more"
                     : "Type your response…"
@@ -442,6 +481,147 @@ export default function PeriodHealthChat() {
                 <Send className="h-4 w-4" />
               )}
             </button>
+          </div>
+        </div>
+      </div>
+        </div> {/* End Left Column */}
+
+        {/* ── Right Column: Side Panel ──────────────────────────────────────── */}
+        <div className="w-80 border-l border-rose-100 bg-white/60 backdrop-blur-md flex flex-col shadow-[-4px_0_15px_rgba(0,0,0,0.02)] z-10">
+          <div className="p-5 border-b border-rose-100 bg-gradient-to-br from-rose-50/50 to-white">
+            <h2 className="font-bold text-gray-800 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-rose-500" />
+              Ultrasound Analysis
+            </h2>
+            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+              Upload your ultrasound image for AI-powered PCOS detection.
+            </p>
+          </div>
+          
+          <div className="p-5 flex-1 overflow-y-auto">
+            {phase === "AWAITING_REPORT" && (
+              <div className="mb-4 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
+                <FileText className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>
+                  The assistant is ready for your report. You can <strong>upload an image here</strong> or paste text in the chat.
+                </span>
+              </div>
+            )}
+            
+            <div className="space-y-4">
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${selectedImage ? 'border-rose-200 bg-rose-50' : 'border-gray-200 hover:border-rose-300 hover:bg-rose-50/50 bg-gray-50'}`}
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                />
+                
+                {selectedImage ? (
+                  <div className="space-y-3 w-full">
+                    <div className="relative inline-block w-full">
+                      <img src={selectedImage} alt="Preview" className="w-full h-auto max-h-48 object-contain rounded-xl border border-rose-200 shadow-sm bg-white" />
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedImage(null);
+                        }}
+                        className="absolute -top-2 -right-2 bg-gray-800 text-white rounded-full p-1 shadow-md hover:bg-red-500 transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs font-medium text-rose-600">Image selected</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="h-12 w-12 rounded-full bg-white shadow-sm flex items-center justify-center mx-auto text-rose-400">
+                      <ImageIcon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Click to upload image</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 10MB</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <button
+                onClick={analyzeScan}
+                disabled={!selectedImage || isScanning || phase === "DONE"}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-white bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 shadow-md shadow-rose-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isScanning ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {isScanning ? "Analyzing..." : "Analyze Ultrasound"}
+              </button>
+
+              {/* Scan Result */}
+              {scanResult && (
+                <div className={`rounded-2xl border p-4 space-y-3 text-sm ${
+                  scanResult.flag === "abnormal"
+                    ? "bg-red-50 border-red-200"
+                    : scanResult.flag === "normal"
+                    ? "bg-green-50 border-green-200"
+                    : "bg-amber-50 border-amber-200"
+                }`}>
+                  {/* Result badge */}
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                      scanResult.flag === "abnormal"
+                        ? "bg-red-100 text-red-700"
+                        : scanResult.flag === "normal"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-amber-100 text-amber-700"
+                    }`}>
+                      {scanResult.flag === "abnormal" ? "⚠️ PCOS Detected" : scanResult.flag === "normal" ? "✅ No PCOS Detected" : "❓ Unclear"}
+                    </span>
+                    {scanResult.confidence > 0 && (
+                      <span className="text-xs text-gray-500 font-medium">{scanResult.confidence}% confidence</span>
+                    )}
+                  </div>
+
+                  {/* AI label */}
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">AI Detection</p>
+                    <p className="font-semibold text-gray-800">{scanResult.label}</p>
+                  </div>
+
+                  {/* Summary */}
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Analysis</p>
+                    <p className="text-gray-700 leading-relaxed text-xs">{scanResult.summary}</p>
+                  </div>
+
+                  <p className="text-[10px] text-gray-400 italic">This AI result is for guidance only. A certified doctor must confirm the diagnosis.</p>
+                </div>
+              )}
+              
+              {phase === "DONE" && (
+                <div className="flex flex-col gap-2 mt-6">
+                  <div className="flex items-center justify-between gap-2 text-xs text-green-700 bg-green-50 border border-green-100 rounded-xl px-3 py-2.5">
+                    <span className="flex items-start gap-1.5">
+                      <CalendarCheck className="h-4 w-4 shrink-0" />
+                      <span>Your appointment is confirmed. Have a safe visit!</span>
+                    </span>
+                  </div>
+                  <button
+                    onClick={clearChat}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-green-700 hover:bg-green-50 rounded-xl transition-colors"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Start over
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
