@@ -517,6 +517,7 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
                     }
                 }
 
+
             elif req.action in ("screen_skin", "screen_eye", "screen_oral"):
                 # Image has been uploaded — response from CV agent is passed in payload
                 cv_result = req.payload.get("cv_result", {})

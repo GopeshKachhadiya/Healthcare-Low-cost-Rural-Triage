@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Mic, Camera, MessageCircle, Clock, MapPin, CalendarCheck } from "lucide-react";
+import { Mic, Camera, MessageCircle, Clock, MapPin, CalendarCheck, Heart } from "lucide-react";
 import PulseDivider from "../components/PulseDivider";
 import TierBadge from "../components/TierBadge";
 import { useApp } from "../context/AppContext";
@@ -39,6 +39,13 @@ export default function Home() {
       icon: CalendarCheck,
       title: t("home.appointments"),
       desc: "Track a booked or raised visit",
+    },
+    {
+      to: "/period-health",
+      icon: Heart,
+      title: "Period Health Bot",
+      desc: "Menstrual health intake & triage assistant",
+      highlight: true,
     },
   ];
 
@@ -94,13 +101,23 @@ export default function Home() {
           {t("home.quickActions")}
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {QUICK_ACTIONS.map(({ to, icon: Icon, title, desc }) => (
+          {QUICK_ACTIONS.map(({ to, icon: Icon, title, desc, highlight }: any) => (
             <Link
               key={to}
               to={to}
-              className="group flex min-h-touch flex-col gap-3 rounded-xl border border-ink/10 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-teal-400 hover:shadow-md"
+              className={`group flex min-h-touch flex-col gap-3 rounded-xl border p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                highlight
+                  ? "border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50 hover:border-rose-400"
+                  : "border-ink/10 bg-white hover:border-teal-400"
+              }`}
             >
-              <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-teal-50 text-teal-600 transition-colors group-hover:bg-teal-500 group-hover:text-white">
+              <span
+                className={`flex h-12 w-12 items-center justify-center rounded-lg transition-colors ${
+                  highlight
+                    ? "bg-rose-100 text-rose-500 group-hover:bg-rose-500 group-hover:text-white"
+                    : "bg-teal-50 text-teal-600 group-hover:bg-teal-500 group-hover:text-white"
+                }`}
+              >
                 <Icon className="h-6 w-6" strokeWidth={2} />
               </span>
               <div>
