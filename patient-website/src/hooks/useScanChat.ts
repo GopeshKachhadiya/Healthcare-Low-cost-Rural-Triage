@@ -41,12 +41,13 @@ export function useScanChat(condition: string, summary: string) {
       const isEmergency = /emergency|severe|bleeding|breath|pain|die|urgent/i.test(text);
 
       const systemPrompt = `You are an AI specialized in skin conditions. The user has been diagnosed with ${condition}. 
-Patient Profile: Name is ${user?.name || "Unknown"}, Date of Birth is ${user?.dob || "Unknown"}.
+Patient Profile: Name is ${user?.name || "Unknown"}, Date of Birth is ${user?.dob || "Unknown"}, Preferred Language is ${user?.preferredLanguage || "en"}.
 The user is located in the village of ${user?.village || "an unknown location"}. When providing remedies or suggesting doctors/hospitals, please take their location into account and suggest the best suitable facilities nearby.
 Your task is to ONLY answer questions regarding this skin condition, how to prevent it, and what remedies to use. 
 If the user asks to create a medical prescription, you may draft one but you MUST explicitly append: "\n\n[PENDING DOCTOR APPROVAL]" and ensure you fill in the Patient Information (Name, Age, Location) using their actual profile details. 
 If the user's message indicates a severe emergency or red flag, start your response with "RED_FLAG:" so I can parse it.
-Do NOT answer questions about general knowledge, programming, or other unrelated topics. Keep responses empathetic but concise.`;
+Do NOT answer questions about general knowledge, programming, or other unrelated topics. Keep responses empathetic but concise.
+CRITICAL: You must always respond in the language the user uses in their prompt. If the user writes in Gujarati (even using English letters/Roman script), you MUST reply in the native Gujarati script (ગુજરાતી લીપી). Never reply in Hindi if the user asks for Gujarati.`;
 
       try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -56,7 +57,7 @@ Do NOT answer questions about general knowledge, programming, or other unrelated
             Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            model: "llama-3.1-8b-instant",
+            model: "llama-3.3-70b-versatile",
             messages: [
               { role: "system", content: systemPrompt },
               ...messages.slice(1).map((m) => ({
@@ -66,12 +67,23 @@ Do NOT answer questions about general knowledge, programming, or other unrelated
               { role: "user", content: text },
             ],
             temperature: 0.3,
-            max_tokens: 250,
+            max_tokens: 1024,
           }),
         });
 
         const data = await response.json();
-        let replyText = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that.";
+        
+        if (data.error) {
+          console.error("Groq API Error Data:", data.error);
+          setMessages((prev) => [
+            ...prev,
+            { id: Date.now().toString(), sender: "bot", text: `API Error: ${data.error.message || JSON.stringify(data.error)}` },
+          ]);
+          setIsTyping(false);
+          return;
+        }
+
+        let replyText = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that. (Empty response)";
         let isRedFlag = isEmergency;
 
         if (replyText.startsWith("RED_FLAG:")) {
