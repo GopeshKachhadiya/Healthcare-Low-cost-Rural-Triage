@@ -21,7 +21,7 @@ export default function Chat() {
   const { addChatMessage, user } = useApp();
 
   const { chatHistory, sendMessage, clearChat } = useChat();
-  const { isRecording, startRecording, stopRecording, cancelRecording } = useVoiceInput();
+  const { isRecording, isPermissionRequestActive, startRecording, stopRecording, cancelRecording } = useVoiceInput();
   const { t } = useTranslation();
   const [inputText, setInputText] = useState("");
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
@@ -278,6 +278,15 @@ export default function Chat() {
 
       {/* Input panel */}
       <div className="pt-3 border-t border-ink/10 bg-paper">
+        {isPermissionRequestActive && (
+          <div className="mb-3 rounded-lg bg-teal-50 p-3 border border-teal-100 flex items-center justify-between text-xs text-teal-700 animate-pulse">
+            <span className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-teal-500 block animate-ping" />
+              Please click 'Allow' on your browser's microphone prompt / कृपया ब्राउज़र के माइक्रोफ़ोन प्रॉम्प्ट पर 'Allow' क्लिक करें...
+            </span>
+          </div>
+        )}
+
         {isRecording && (
           <div className="mb-3 rounded-lg bg-tier-red-bg p-3 border border-tier-red/10 flex items-center justify-between text-xs text-tier-red animate-pulse">
             <span className="flex items-center gap-2">

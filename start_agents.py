@@ -7,7 +7,7 @@ import psutil
 # Map of all agent paths to their intended ports
 AGENTS = [
     # Orchestrators
-    ("orchestrators/patient_orchestrator/main.py", 8080),
+    ("orchestrators/patient_orchestrator/main.py", 9000),
     ("orchestrators/hospital_orchestrator/main.py", 8050),
     
     # NLP & RAG Agents

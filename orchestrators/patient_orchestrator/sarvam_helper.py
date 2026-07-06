@@ -86,8 +86,8 @@ async def text_to_speech(text: str, language: str) -> str:
                 json={
                     "text": text,
                     "target_language_code": lang,
-                    "speaker": "meera",
-                    "model": "bulbul:v1"
+                    "speaker": "anushka",
+                    "model": "bulbul:v2"
                 }
             )
             if resp.status_code == 200:

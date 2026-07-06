@@ -120,7 +120,7 @@ export default function PeriodHealthChat() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { isRecording, startRecording, stopRecording, cancelRecording } = useVoiceInput();
+  const { isRecording, isPermissionRequestActive, startRecording, stopRecording, cancelRecording } = useVoiceInput();
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
@@ -515,6 +515,15 @@ export default function PeriodHealthChat() {
               </button>
             </div>
           )}
+
+        {isPermissionRequestActive && (
+          <div className="mb-3 rounded-lg bg-rose-50 p-3 border border-rose-100 flex items-center justify-between text-xs text-rose-700 animate-pulse">
+            <span className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-rose-500 block animate-ping" />
+              Please click 'Allow' on your browser's microphone prompt / कृपया ब्राउज़र के माइक्रोफ़ोन प्रॉम्प्ट पर 'Allow' क्लिक करें...
+            </span>
+          </div>
+        )}
 
         {isRecording && (
           <div className="mb-3 rounded-lg bg-red-50 p-3 border border-red-100 flex items-center justify-between text-xs text-rose-600 animate-pulse">

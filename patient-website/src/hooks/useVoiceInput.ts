@@ -4,11 +4,30 @@ export function useVoiceInput() {
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const [isPermissionRequestActive, setIsPermissionRequestActive] = useState(false);
 
   const startRecording = async () => {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Voice recording is blocked or not supported on this connection. Please make sure you are accessing via localhost or HTTPS.");
+        return;
+      }
+      setIsPermissionRequestActive(true);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      setIsPermissionRequestActive(false);
+      
+      let options = {};
+      if (typeof MediaRecorder.isTypeSupported === "function") {
+        if (MediaRecorder.isTypeSupported("audio/webm")) {
+          options = { mimeType: "audio/webm" };
+        } else if (MediaRecorder.isTypeSupported("audio/ogg")) {
+          options = { mimeType: "audio/ogg" };
+        } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          options = { mimeType: "audio/mp4" };
+        }
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
@@ -21,8 +40,9 @@ export function useVoiceInput() {
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err) {
+      setIsPermissionRequestActive(false);
       console.error("Failed to start voice recording:", err);
-      alert("Please grant microphone permission to record audio.");
+      alert("Could not start recording. Please check your microphone permissions.");
     }
   };
 
@@ -88,6 +108,7 @@ export function useVoiceInput() {
 
   return {
     isRecording,
+    isPermissionRequestActive,
     startRecording,
     stopRecording,
     cancelRecording,

@@ -133,6 +133,7 @@ async def route_patient_request(req: PatientRequest):
                 # Always initialize — set inside the block only if triggered
                 is_emergency = False
                 triage_reason = "Routine"
+                care_advice = ""
 
                 if not is_greeting:
                     print("  -> Agent 1 (Risk) analyzing...")
@@ -612,4 +613,4 @@ async def transcribe_audio(file: UploadFile = File(...), language: str = "hi"):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    uvicorn.run(app, host="0.0.0.0", port=9000)
