@@ -26,7 +26,7 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-ink/10 bg-paper/90 backdrop-blur">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-3">
-        <Link to={isStaff ? "/hospital" : "/"} className="flex items-center gap-2">
+        <Link to={isStaff ? "/hospital" : "/home"} className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-500 font-display text-lg text-white">
             {isStaff ? <Activity className="h-5 w-5" /> : "அ"}
           </span>
@@ -82,7 +82,10 @@ export default function Navbar() {
               >
                 {user.name.charAt(0)}
               </Link>
-              <button onClick={() => logout()} className="text-ink/50 hover:text-ink">
+              <button 
+                onClick={() => logout()} 
+                className="text-ink/50 hover:text-ink"
+              >
                 <LogOut className="h-5 w-5" />
               </button>
             </div>

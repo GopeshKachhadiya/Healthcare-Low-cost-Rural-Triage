@@ -188,7 +188,9 @@ export function AppContextProvider({ children }: { children: React.ReactNode }) 
   };
 
   const logout = () => {
+    localStorage.removeItem("am_user");
     setUser(null);
+    window.location.href = "/";
   };
 
   const updateProfile = (profile: Partial<UserProfile>) => {

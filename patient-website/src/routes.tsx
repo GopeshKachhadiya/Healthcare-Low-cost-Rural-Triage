@@ -1,4 +1,5 @@
 import Home from "./pages/Home";
+import Landing from "./pages/Landing";
 import Upload from "./pages/Upload";
 import ScreeningResult from "./pages/ScreeningResult";
 import Chat from "./pages/Chat";
@@ -18,7 +19,8 @@ export interface RouteItem {
 }
 
 export const routesConfig: RouteItem[] = [
-  { path: "/", element: <Home /> },
+  { path: "/home", element: <Home /> },
+  { path: "/", element: <Landing /> },
   { path: "/scan", element: <Upload /> },
   { path: "/scan/result/:id", element: <ScreeningResult /> },
   { path: "/chat", element: <Chat /> },
