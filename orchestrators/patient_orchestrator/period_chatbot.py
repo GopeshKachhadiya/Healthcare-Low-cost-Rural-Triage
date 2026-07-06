@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict
@@ -36,6 +36,7 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = None
     action: str
     payload: dict
+    language: Optional[str] = "hi"
 
 async def _log_to_supabase(client: httpx.AsyncClient, table: str, data: dict):
     if not SUPABASE_URL or not SUPABASE_KEY:
@@ -65,6 +66,18 @@ async def period_route(req: ChatRequest):
     text = req.payload.get("text", "")
     history = req.payload.get("history", [])
 
+    user_lang = req.language or "hi"
+    from orchestrators.patient_orchestrator.sarvam_helper import translate_text, text_to_speech
+    english_text = await translate_text(text, user_lang, "en")
+    print(f"  -> Translated PeriodBot input from {user_lang} to en: '{english_text}'")
+
+    translated_history = []
+    for msg in history:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+        content_en = await translate_text(content, user_lang, "en") if user_lang != "en" else content
+        translated_history.append({"role": role, "content": content_en})
+
     async with httpx.AsyncClient(timeout=30.0) as client:
         session_id = req.session_id
         if not session_id and SUPABASE_URL:
@@ -83,7 +96,7 @@ async def period_route(req: ChatRequest):
             })
 
         is_report_turn = False
-        if len(history) > 0 and "Please type in the details from your report" in history[-1].get("content", ""):
+        if len(translated_history) > 0 and "Please type in the details from your report" in translated_history[-1].get("content", ""):
             is_report_turn = True
 
         MODEL_A_SYSTEM_PROMPT = """You are a menstrual health intake and triage assistant for a healthcare app used in
@@ -215,7 +228,7 @@ Respond with ONLY valid JSON, no other text, in this exact schema:
         if is_report_turn:
             b_messages = [
                 {"role": "system", "content": MODEL_B_SYSTEM_PROMPT},
-                {"role": "user", "content": text},
+                {"role": "user", "content": english_text},
             ]
             try:
                 resp_b = await client.post(
@@ -238,7 +251,7 @@ Respond with ONLY valid JSON, no other text, in this exact schema:
                 else:
                     report_result = {"report_summary": raw, "flag": "unclear", "notes": ""}
 
-            a_messages = [{"role": "system", "content": MODEL_A_SYSTEM_PROMPT}] + history
+            a_messages = [{"role": "system", "content": MODEL_A_SYSTEM_PROMPT}] + translated_history
             a_messages.append({"role": "system", "content": f"REPORT_MODEL_OUTPUT: {json.dumps(report_result)}"})
             a_messages.append({"role": "user", "content": "Here is my report."})
 
@@ -250,8 +263,8 @@ Respond with ONLY valid JSON, no other text, in this exact schema:
             )
             reply = resp_a.json()["choices"][0]["message"]["content"]
         else:
-            a_messages = [{"role": "system", "content": MODEL_A_SYSTEM_PROMPT}] + history
-            a_messages.append({"role": "user", "content": text})
+            a_messages = [{"role": "system", "content": MODEL_A_SYSTEM_PROMPT}] + translated_history
+            a_messages.append({"role": "user", "content": english_text})
 
             resp_a = await client.post(
                 "https://openrouter.ai/api/v1/chat/completions",
@@ -268,13 +281,19 @@ Respond with ONLY valid JSON, no other text, in this exact schema:
             if "🚨" in reply or "IMMEDIATELY" in reply or ("Urgency Level" in reply and "🔴" in reply):
                 is_emergency = True
 
+        # Translate response back to user's native language using Sarvam AI
+        translated_reply = await translate_text(reply, "en", user_lang)
+
         if session_id:
             await _log_to_supabase(client, "chat_messages", {
                 "session_id": session_id,
                 "sender_type": "agent",
                 "agent_role": "PeriodBot",
-                "content": reply
+                "content": translated_reply
             })
+
+        # Generate TTS base64 audio stream
+        audio_b64 = await text_to_speech(translated_reply, user_lang)
 
         return {
             "status": "success",
@@ -282,10 +301,21 @@ Respond with ONLY valid JSON, no other text, in this exact schema:
             "data": {
                 "status": "success",
                 "data": {
-                    "answer_text": reply,
+                    "answer_text": translated_reply,
+                    "audio_base64": audio_b64,
                     "citations": [],
                     "urgency_banner": is_emergency,
                     "suggested_followups": []
                 }
             }
         }
+
+@app.post("/transcribe")
+async def transcribe_audio(file: UploadFile = File(...), language: str = "hi"):
+    try:
+        audio_bytes = await file.read()
+        from orchestrators.patient_orchestrator.sarvam_helper import speech_to_text
+        transcript = await speech_to_text(audio_bytes, language)
+        return {"status": "success", "transcript": transcript}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

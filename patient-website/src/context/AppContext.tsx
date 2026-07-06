@@ -38,6 +38,7 @@ export interface ChatMessage {
   timestamp: string;
   sources?: { title: string; content: string }[];
   isRedFlag?: boolean;
+  audioBase64?: string;
 }
 
 interface UserProfile {
@@ -70,7 +71,7 @@ interface AppContextProps {
   addScan: (scan: Omit<Scan, "id" | "recordedAt">) => string;
   addAppointment: (appointment: Omit<Appointment, "id" | "status" | "date" | "time">) => string;
   updateAppointmentStatus: (id: string, status: Appointment["status"]) => void;
-  addChatMessage: (text: string, sender: "user" | "bot", sources?: ChatMessage["sources"], isRedFlag?: boolean) => void;
+  addChatMessage: (text: string, sender: "user" | "bot", sources?: ChatMessage["sources"], isRedFlag?: boolean, audioBase64?: string) => void;
   clearChat: () => void;
 }
 
@@ -233,7 +234,8 @@ export function AppContextProvider({ children }: { children: React.ReactNode }) 
     text: string,
     sender: "user" | "bot",
     sources?: ChatMessage["sources"],
-    isRedFlag?: boolean
+    isRedFlag?: boolean,
+    audioBase64?: string
   ) => {
     setChatHistory((prev) => [
       ...prev,
@@ -244,6 +246,7 @@ export function AppContextProvider({ children }: { children: React.ReactNode }) 
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         sources,
         isRedFlag,
+        audioBase64,
       },
     ]);
   };

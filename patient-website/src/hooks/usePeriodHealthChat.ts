@@ -19,6 +19,7 @@ export interface PeriodMessage {
   isRedFlag?: boolean;
   isReport?: boolean;   // report analysis block
   isBooking?: boolean;  // final booking confirmation
+  audioBase64?: string;
 }
 
 interface OpenRouterMessage {
@@ -45,6 +46,10 @@ export function usePeriodHealthChat() {
   }, []);
 
   const callBackend = async (text: string) => {
+    const hasGujarati = /[\u0A80-\u0AFF]/.test(text);
+    const hasHindi    = /[\u0900-\u097F]/.test(text);
+    const effectiveLang = hasGujarati ? "gu" : hasHindi ? "hi" : "en";
+
     const res = await fetch("http://localhost:8001/route", {
       method: "POST",
       headers: {
@@ -58,6 +63,7 @@ export function usePeriodHealthChat() {
           text,
           history: conversationHistory.current,
         },
+        language: effectiveLang,
       }),
     });
 
@@ -73,6 +79,7 @@ export function usePeriodHealthChat() {
     return {
       reply: data.data?.data?.answer_text || "",
       isEmergency: data.data?.data?.urgency_banner || false,
+      audioBase64: data.data?.data?.audio_base64 || "",
     };
   };
 
@@ -85,7 +92,7 @@ export function usePeriodHealthChat() {
       setIsLoading(true);
 
       try {
-        const { reply, isEmergency } = await callBackend(text);
+        const { reply, isEmergency, audioBase64 } = await callBackend(text);
 
         // Check for specific backend responses to update local state
         const isAwaitingReport = reply.includes("Please type in the details from your report");
@@ -96,6 +103,7 @@ export function usePeriodHealthChat() {
           content: reply,
           isRedFlag: isEmergency,
           isBooking: isBookingConfirm,
+          audioBase64: audioBase64,
         });
 
         conversationHistory.current.push({ role: "user", content: text });
@@ -127,7 +135,7 @@ export function usePeriodHealthChat() {
       setIsLoading(true);
 
       try {
-        const { reply, isEmergency } = await callBackend(reportText);
+        const { reply, isEmergency, audioBase64 } = await callBackend(reportText);
 
         const isBookingConfirm = /appointment has been successfully booked/i.test(reply);
 
@@ -136,7 +144,8 @@ export function usePeriodHealthChat() {
           content: reply, 
           isReport: true,
           isRedFlag: isEmergency,
-          isBooking: isBookingConfirm 
+          isBooking: isBookingConfirm,
+          audioBase64: audioBase64
         });
 
         conversationHistory.current.push({ role: "user", content: reportText });

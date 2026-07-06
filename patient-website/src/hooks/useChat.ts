@@ -76,7 +76,8 @@ export function useChat() {
             ragData.answer_text,
             "bot",
             formattedSources,
-            ragData.urgency_banner
+            ragData.urgency_banner,
+            ragData.audio_base64
           );
 
           if (ragData.urgency_banner) {

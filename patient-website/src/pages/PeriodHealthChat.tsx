@@ -12,8 +12,11 @@ import {
   CalendarCheck,
   ClipboardList,
   RefreshCw,
+  Volume2,
 } from "lucide-react";
 import { usePeriodHealthChat, CLINIC_LIST } from "../hooks/usePeriodHealthChat";
+import VoiceInputButton from "../components/VoiceInputButton";
+import { useVoiceInput } from "../hooks/useVoiceInput";
 
 // ── Suggested quick-start questions ─────────────────────────────────────────
 const STARTER_QUESTIONS = [
@@ -116,6 +119,92 @@ export default function PeriodHealthChat() {
   const [showClinicChips, setShowClinicChips] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const { isRecording, startRecording, stopRecording, cancelRecording } = useVoiceInput();
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
+  const timerRef = useRef<any>(null);
+
+  const handleMicClick = async () => {
+    if (isRecording) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      const text = await stopRecording("hi", "http://localhost:8001/transcribe");
+      if (text) {
+        if (phase === "AWAITING_REPORT") {
+          submitReport(text);
+        } else {
+          sendMessage(text);
+        }
+      }
+    } else {
+      startRecording();
+      timerRef.current = setTimeout(async () => {
+        const text = await stopRecording("hi", "http://localhost:8001/transcribe");
+        if (text) {
+          if (phase === "AWAITING_REPORT") {
+            submitReport(text);
+          } else {
+            sendMessage(text);
+          }
+        }
+      }, 7000);
+    }
+  };
+
+  const togglePlayAudio = (msgId: string, base64?: string) => {
+    if (playingAudioId === msgId) {
+      if (activeAudioRef.current) {
+        activeAudioRef.current.pause();
+        activeAudioRef.current = null;
+      }
+      setPlayingAudioId(null);
+    } else {
+      if (activeAudioRef.current) {
+        activeAudioRef.current.pause();
+      }
+
+      if (!base64) {
+        setPlayingAudioId(msgId);
+        setTimeout(() => {
+          setPlayingAudioId((prev) => (prev === msgId ? null : prev));
+        }, 4000);
+        return;
+      }
+
+      try {
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes.buffer], { type: "audio/wav" });
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+
+        activeAudioRef.current = audio;
+        setPlayingAudioId(msgId);
+
+        audio.onended = () => {
+          setPlayingAudioId((prev) => (prev === msgId ? null : prev));
+          activeAudioRef.current = null;
+        };
+
+        audio.onerror = () => {
+          setPlayingAudioId((prev) => (prev === msgId ? null : prev));
+          activeAudioRef.current = null;
+        };
+
+        audio.play().catch((err) => {
+          console.error("Audio play failed:", err);
+          setPlayingAudioId(null);
+        });
+      } catch (err) {
+        console.error("Failed to decode and play audio:", err);
+        setPlayingAudioId(null);
+      }
+    }
+  };
 
   // Auto-scroll on new message
   useEffect(() => {
@@ -340,6 +429,22 @@ export default function PeriodHealthChat() {
                     )}
                   </div>
 
+                  {!isUser && (
+                    <div className="mt-2 flex items-center justify-between gap-4">
+                      <button
+                        onClick={() => togglePlayAudio(msg.id, msg.audioBase64)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${
+                          playingAudioId === msg.id
+                            ? "bg-rose-500 text-white shadow-sm"
+                            : "bg-rose-50 border border-rose-100 text-rose-700 hover:bg-rose-100"
+                        } transition-all`}
+                      >
+                        <Volume2 className="h-3.5 w-3.5" />
+                        {playingAudioId === msg.id ? "Playing Voice..." : "Listen / सुनें"}
+                      </button>
+                    </div>
+                  )}
+
                   {/* Booking celebration */}
                   {msg.isBooking && (
                     <div className="mt-2 text-center text-xs text-green-600 font-medium animate-bounce">
@@ -411,7 +516,30 @@ export default function PeriodHealthChat() {
             </div>
           )}
 
-          <div className="flex gap-2 items-end">
+        {isRecording && (
+          <div className="mb-3 rounded-lg bg-red-50 p-3 border border-red-100 flex items-center justify-between text-xs text-rose-600 animate-pulse">
+            <span className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-rose-500 block" />
+              Recording voice translation to English (ASR via Sarvam AI)...
+            </span>
+            <button
+              onClick={() => {
+                if (timerRef.current) clearTimeout(timerRef.current);
+                cancelRecording();
+              }}
+              className="font-semibold underline uppercase text-rose-600"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
+          <div className="flex gap-2 items-center">
+            <VoiceInputButton
+              isRecording={isRecording}
+              onClick={handleMicClick}
+              disabled={inputText.trim() !== "" || phase === "DONE"}
+            />
             <input
               ref={inputRef}
               id="period-chat-input"
@@ -419,9 +547,11 @@ export default function PeriodHealthChat() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={isLoading || phase === "DONE"}
+              disabled={isLoading || phase === "DONE" || isRecording}
               placeholder={
-                phase === "AWAITING_REPORT"
+                isRecording
+                  ? "Listening/सुन रहे हैं..."
+                  : phase === "AWAITING_REPORT"
                   ? "Paste hormone values or ultrasound summary here…"
                   : phase === "DONE"
                     ? "Appointment booked — start a new chat to ask more"
@@ -432,7 +562,7 @@ export default function PeriodHealthChat() {
             <button
               id="period-chat-send"
               type="button"
-              disabled={!inputText.trim() || isLoading || phase === "DONE"}
+              disabled={!inputText.trim() || isLoading || phase === "DONE" || isRecording}
               onClick={handleSend}
               className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-pink-500 text-white shadow-md shadow-rose-200 hover:shadow-rose-300 hover:scale-105 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100 shrink-0"
             >

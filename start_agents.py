@@ -11,7 +11,7 @@ AGENTS = [
     ("orchestrators/hospital_orchestrator/main.py", 8050),
     
     # NLP & RAG Agents
-    # ("nlp_agents/language_processor/main.py", 8001), # Heavy HF model
+    ("orchestrators/patient_orchestrator/period_chatbot.py", 8001),
     # ("nlp_agents/query_understanding/main.py", 8006), # Heavy HF model
     ("rag_agents/rag_pipeline/main.py", 8031),
     

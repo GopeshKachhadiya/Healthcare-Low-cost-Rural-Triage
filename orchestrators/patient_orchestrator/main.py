@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -94,6 +94,20 @@ async def route_patient_request(req: PatientRequest):
                 text = req.payload.get("text", "")
                 history = req.payload.get("history", [])
                 
+                # --- Translate incoming user query using Sarvam AI ---
+                user_lang = req.language or "hi"
+                from orchestrators.patient_orchestrator.sarvam_helper import translate_text, text_to_speech
+                english_text = await translate_text(text, user_lang, "en")
+                print(f"  -> Translated input from {user_lang} to en: '{english_text}'")
+
+                # Translate history to English for RAG consistency
+                translated_history = []
+                for msg in history[-12:]:
+                    role = msg.get("role", "user")
+                    content = msg.get("content", "")
+                    content_en = await translate_text(content, user_lang, "en") if user_lang != "en" else content
+                    translated_history.append({"role": role, "content": content_en})
+                
                 # --- Create or Retrieve Chat Session ---
                 session_id = req.session_id
                 if not session_id and SUPABASE_URL:
@@ -113,7 +127,7 @@ async def route_patient_request(req: PatientRequest):
                     })
                 
                 # Check if it's just a greeting to bypass risk scan
-                is_greeting = text.strip().lower() in ["hi", "hello", "hey", "start"]
+                is_greeting = english_text.strip().lower() in ["hi", "hello", "hey", "start"]
                 print(f"\n[Multi-Agent Chat Flow Started for {req.patient_id}]")
 
                 # Always initialize — set inside the block only if triggered
@@ -134,7 +148,7 @@ async def route_patient_request(req: PatientRequest):
                                     "model": "llama-3.1-8b-instant",
                                     "messages": [
                                         {"role": "system", "content": "You are a medical triage agent. If the text indicates an emergency (e.g., severe chest pain, extreme breathlessness, uncontrolled bleeding, loss of consciousness), reply with exactly 'EMERGENCY'. Otherwise, reply exactly 'ROUTINE'."},
-                                        {"role": "user", "content": text}
+                                        {"role": "user", "content": english_text}
                                     ],
                                     "temperature": 0.0
                                 }
@@ -160,7 +174,7 @@ async def route_patient_request(req: PatientRequest):
                                             "model": "meta-llama/llama-3.1-8b-instruct",
                                             "messages": [
                                                 {"role": "system", "content": "You are a medical triage agent. If the text indicates an emergency (e.g., severe chest pain, extreme breathlessness, uncontrolled bleeding, loss of consciousness), reply with exactly 'EMERGENCY'. Otherwise, reply exactly 'ROUTINE'."},
-                                                {"role": "user", "content": text}
+                                                {"role": "user", "content": english_text}
                                             ],
                                             "temperature": 0.0,
                                             "max_tokens": 10
@@ -224,9 +238,9 @@ RULES:
 - If the user replies with a hospital choice AFTER [INTERVIEW_COMPLETE] was already shown, output [BOOK_APPOINTMENT] at the start, then confirm the appointment with slot details."""
 
                 messages = [{"role": "system", "content": system_prompt}]
-                for msg in history[-12:]:
+                for msg in translated_history:
                     messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
-                messages.append({"role": "user", "content": text})
+                messages.append({"role": "user", "content": english_text})
 
 
                 # ── Agent 2: OpenRouter only (no Groq fallback to preserve quota) ──
@@ -299,11 +313,11 @@ RULES:
 
                     # Build full transcript from shared history (used by A3 + A4)
                     full_transcript = ""
-                    for msg in history:  # ALL history, not just last N
+                    for msg in translated_history:  # ALL history, not just last N
                         role = msg.get("role", "user").capitalize()
                         content = msg.get("content", "")
                         full_transcript += f"{role}: {content}\n"
-                    full_transcript += f"User: {text}\n"
+                    full_transcript += f"User: {english_text}\n"
 
                     # Extract key clinical facts from the transcript for grounding
                     chief_complaint = patient_summary_json.get("chief_complaint", "")
@@ -425,9 +439,9 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
                     print("  -> Agent 3 (Summary) creating SBAR handoff note...")
 
                     transcript_sbar = ""
-                    for msg in history[-10:]:
+                    for msg in translated_history[-10:]:
                         transcript_sbar += f"{msg.get('role').capitalize()}: {msg.get('content')}\n"
-                    transcript_sbar += f"User: {text}\n"
+                    transcript_sbar += f"User: {english_text}\n"
 
                     sbar_messages = [
                         {"role": "system", "content": "You are a clinical scribe. Generate a concise SBAR (Situation, Background, Assessment, Recommendation) note based on this patient interview transcript. End the note with: '@clinical-expert please provide medical assessment for this patient.'"},
@@ -489,27 +503,35 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
                                 "payload": {"note": sbar_note}
                             })
 
+                # Translate response back to user's native language using Sarvam AI
+                translated_answer = await translate_text(rag_answer, "en", user_lang)
+                translated_care = await translate_text(care_advice, "en", user_lang) if care_advice else ""
+
                 if session_id:
                     await _log_to_supabase(client, "chat_messages", {
                         "session_id": session_id,
                         "sender_type": "agent",
                         "agent_role": "A4_Care" if care_advice else "A2_Intake",
-                        "content": rag_answer
+                        "content": translated_answer
                     })
                     if care_advice:
                         await _log_to_supabase(client, "agent_insights", {
                             "session_id": session_id,
                             "insight_type": "care_advice",
-                            "payload": {"advice": care_advice}
+                            "payload": {"advice": translated_care}
                         })
                 
+                # Generate TTS base64 audio stream
+                audio_b64 = await text_to_speech(translated_answer, user_lang)
+
                 return {
                     "status": "success",
                     "route": "rag_chat",
                     "data": {
                         "status": "success",
                         "data": {
-                            "answer_text": rag_answer,
+                            "answer_text": translated_answer,
+                            "audio_base64": audio_b64,
                             "citations": citations,
                             "urgency_banner": False,
                             "suggested_followups": []
@@ -577,6 +599,16 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
         print(f"[ERROR] Unhandled exception in /route handler: {e}")
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/transcribe")
+async def transcribe_audio(file: UploadFile = File(...), language: str = "hi"):
+    try:
+        audio_bytes = await file.read()
+        from orchestrators.patient_orchestrator.sarvam_helper import speech_to_text
+        transcript = await speech_to_text(audio_bytes, language)
+        return {"status": "success", "transcript": transcript}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
     import uvicorn

@@ -18,16 +18,17 @@ const STANDARD_QUESTIONS = [
 export default function Chat() {
   const [searchParams] = useSearchParams();
   const condition = searchParams.get("condition");
-  const { addChatMessage } = useApp();
+  const { addChatMessage, user } = useApp();
 
   const { chatHistory, sendMessage, clearChat } = useChat();
-  const { isRecording, startRecording, stopRecording } = useVoiceInput();
+  const { isRecording, startRecording, stopRecording, cancelRecording } = useVoiceInput();
   const { t } = useTranslation();
   const [inputText, setInputText] = useState("");
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<any>(null);
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (condition && chatHistory.length === 0) {
@@ -49,28 +50,72 @@ export default function Chat() {
   };
 
   const handleMicClick = async () => {
+    const userLang = user?.preferredLanguage || "hi";
     if (isRecording) {
       if (timerRef.current) clearTimeout(timerRef.current);
-      const text = await stopRecording();
+      const text = await stopRecording(userLang, "http://127.0.0.1:9000/transcribe");
       if (text) sendMessage(text, condition || undefined);
     } else {
       startRecording();
       timerRef.current = setTimeout(async () => {
-        const text = await stopRecording();
+        const text = await stopRecording(userLang, "http://127.0.0.1:9000/transcribe");
         if (text) sendMessage(text, condition || undefined);
-      }, 3000);
+      }, 7000);
     }
   };
 
-  const togglePlayAudio = (msgId: string) => {
+  const togglePlayAudio = (msgId: string, base64?: string) => {
     if (playingAudioId === msgId) {
+      if (activeAudioRef.current) {
+        activeAudioRef.current.pause();
+        activeAudioRef.current = null;
+      }
       setPlayingAudioId(null);
     } else {
-      setPlayingAudioId(msgId);
-      // Simulate audio ending after 4s
-      setTimeout(() => {
-        setPlayingAudioId((prev) => (prev === msgId ? null : prev));
-      }, 4000);
+      if (activeAudioRef.current) {
+        activeAudioRef.current.pause();
+      }
+
+      if (!base64) {
+        setPlayingAudioId(msgId);
+        setTimeout(() => {
+          setPlayingAudioId((prev) => (prev === msgId ? null : prev));
+        }, 4000);
+        return;
+      }
+
+      try {
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes.buffer], { type: "audio/wav" });
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+
+        activeAudioRef.current = audio;
+        setPlayingAudioId(msgId);
+
+        audio.onended = () => {
+          setPlayingAudioId((prev) => (prev === msgId ? null : prev));
+          activeAudioRef.current = null;
+        };
+
+        audio.onerror = () => {
+          setPlayingAudioId((prev) => (prev === msgId ? null : prev));
+          activeAudioRef.current = null;
+        };
+
+        audio.play().catch((err) => {
+          console.error("Audio play failed:", err);
+          setPlayingAudioId(null);
+        });
+      } catch (err) {
+        console.error("Failed to decode and play audio:", err);
+        setPlayingAudioId(null);
+      }
     }
   };
 
@@ -204,7 +249,7 @@ export default function Chat() {
                   {!isUser && (
                     <div className="mt-3 pt-2.5 border-t border-ink/5 flex items-center justify-between gap-4">
                       <button
-                        onClick={() => togglePlayAudio(msg.id)}
+                        onClick={() => togglePlayAudio(msg.id, msg.audioBase64)}
                         className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-semibold ${
                           playingAudioId === msg.id
                             ? "bg-teal-500 text-white"
@@ -242,7 +287,7 @@ export default function Chat() {
             <button
               onClick={() => {
                 if (timerRef.current) clearTimeout(timerRef.current);
-                stopRecording("");
+                cancelRecording();
               }}
               className="font-semibold underline uppercase text-tier-red"
             >
