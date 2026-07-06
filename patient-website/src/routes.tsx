@@ -6,7 +6,6 @@ import Chat from "./pages/Chat";
 import History from "./pages/History";
 import Appointments from "./pages/Appointments";
 import AppointmentDetail from "./pages/AppointmentDetail";
-import HospitalMap from "./pages/HospitalMap";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import HospitalDashboard from "./pages/hospital/HospitalDashboard";
@@ -27,7 +26,6 @@ export const routesConfig: RouteItem[] = [
   { path: "/history", element: <History /> },
   { path: "/appointments", element: <Appointments /> },
   { path: "/appointments/:id", element: <AppointmentDetail /> },
-  { path: "/find-hospital", element: <HospitalMap /> },
   { path: "/profile", element: <Profile /> },
   { path: "/login", element: <Login /> },
   { path: "/hospital", element: <HospitalDashboard /> },

@@ -12,8 +12,6 @@ import {
 import { supabase } from "../../lib/supabaseClient";
 import TierBadge from "../../components/TierBadge";
 import PulseDivider from "../../components/PulseDivider";
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
 
 export default function HospitalDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -564,41 +562,7 @@ export default function HospitalDashboard() {
     );
   };
 
-  const renderMap = () => {
-    const center: [number, number] = [28.81, 79.03];
-    return (
-      <div className="animate-fade-in mx-auto max-w-5xl h-[600px] rounded-xl border border-ink/10 bg-white shadow-sm overflow-hidden flex flex-col">
-        <div className="p-4 border-b border-ink/10 bg-paper/50">
-          <h3 className="font-display text-lg font-bold text-ink">Regional Disease Surveillance</h3>
-          <p className="text-xs text-ink/60">Live geographical clustering of reported cases in the last 7 days.</p>
-        </div>
-        <div className="flex-1 relative z-0">
-          <MapContainer center={center} zoom={11} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {MOCK_DB.areaStats.mapClusters.map((cluster: any, idx: number) => {
-              const color = cluster.severity === 'critical' ? '#EF4444' : cluster.severity === 'high' ? '#F97316' : '#EAB308';
-              return (
-                <CircleMarker 
-                  key={idx} 
-                  center={[cluster.lat, cluster.lng]} 
-                  radius={cluster.count * 1.5}
-                  pathOptions={{ fillColor: color, color: color, fillOpacity: 0.5 }}
-                >
-                  <Popup>
-                    <div className="text-sm font-bold">{cluster.block}</div>
-                    <div className="text-xs capitalize">{cluster.disease}: {cluster.count} cases</div>
-                  </Popup>
-                </CircleMarker>
-              );
-            })}
-          </MapContainer>
-        </div>
-      </div>
-    );
-  };
+
 
   // --- Case Detail Slide-over ---
   const renderCaseDetail = () => {
@@ -1358,7 +1322,6 @@ export default function HospitalDashboard() {
     <div className="w-full bg-paper min-h-[calc(100vh-61px)] p-6">
       {activeTab === "queue" && renderQueue()}
       {activeTab === "patients" && renderPatients()}
-      {activeTab === "map" && renderMap()}
       {renderCaseDetail()}
     </div>
   );
