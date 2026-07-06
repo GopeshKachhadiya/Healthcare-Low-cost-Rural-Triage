@@ -8,16 +8,6 @@ export default function Login() {
   const { login, isLoggedIn, user } = useSession();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (isLoggedIn) {
-      if (user?.role && user.role !== "patient") {
-        navigate("/hospital");
-      } else {
-        navigate("/home");
-      }
-    }
-  }, [isLoggedIn, navigate, user]);
-
   const [loginType, setLoginType] = useState<"patient" | "staff">("patient");
   const [role, setRole] = useState<"doctor" | "nurse" | "admin">("doctor");
 

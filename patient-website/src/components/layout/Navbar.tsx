@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
-import { LogOut, Activity, LayoutDashboard, Users, Map, Eye } from "lucide-react";
+import { LogOut, Activity, LayoutDashboard, Users, Eye } from "lucide-react";
 import { useSession } from "../../hooks/useSession";
 import { useTranslation } from "../../hooks/useTranslation";
 import LanguageDropdown from "./LanguageDropdown";
@@ -7,7 +7,6 @@ import LanguageDropdown from "./LanguageDropdown";
 const STAFF_LINKS = [
   { to: "/hospital", label: "Triage Queue", icon: LayoutDashboard },
   { to: "/hospital?tab=patients", label: "Patients", icon: Users },
-  { to: "/hospital?tab=map", label: "Disease Map", icon: Map },
   { to: "/hospital/imaging", label: "Imaging Suite", icon: Eye },
 ];
 
@@ -20,7 +19,6 @@ export default function Navbar() {
   const PATIENT_LINKS = [
     { to: "/chat", label: t("home.chat") },
     { to: "/history", label: t("home.history") },
-    { to: "/find-hospital", label: t("home.findClinic") },
   ];
 
   return (
