@@ -60,7 +60,7 @@ async def speech_to_text(audio_bytes: bytes, language: str) -> str:
                 },
                 files={"file": ("audio.webm", audio_bytes, "audio/webm")},
                 data={
-                    "model": "saaras:v1",
+                    "model": "saaras:v3",
                     "language_code": lang
                 }
             )
