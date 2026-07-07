@@ -341,7 +341,7 @@ export default function PeriodHealthChat() {
         <div className="mx-auto max-w-3xl flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              to="/"
+              to="/home"
               className="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-100 bg-white text-rose-400 hover:border-rose-300 hover:text-rose-600 transition-all shadow-sm"
               aria-label="Back to Home"
             >

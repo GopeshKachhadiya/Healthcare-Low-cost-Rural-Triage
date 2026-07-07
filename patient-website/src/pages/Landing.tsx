@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useSession } from "../hooks/useSession";
 import { Mic, ArrowRight, CheckCircle2, ShieldCheck, Globe2, Building2, Stethoscope, Camera, Heart, MessageSquare, ChevronDown } from "lucide-react";
 import { getLenis } from "../utils/lenis";
 import gsap from "gsap";
@@ -36,7 +37,13 @@ const FAQS = [
 ];
 
 export default function Landing() {
+  const { user } = useSession();
   const navRef = useRef<HTMLElement>(null);
+
+  if (user) {
+    const isStaff = user.role && user.role !== "patient";
+    return <Navigate to={isStaff ? "/hospital" : "/home"} replace />;
+  }
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

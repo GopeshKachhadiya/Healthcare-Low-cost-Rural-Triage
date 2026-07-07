@@ -125,7 +125,7 @@ export default function Chat() {
       <div className="flex items-center justify-between pb-3 border-b border-ink/10">
         <div className="flex items-center gap-3">
           <Link
-            to="/"
+            to="/home"
             className="flex h-10 w-10 items-center justify-center rounded-lg border border-ink/10 bg-white text-ink hover:border-teal-400 hover:text-teal-600 transition-all shadow-sm"
             aria-label="Back to Home"
           >
