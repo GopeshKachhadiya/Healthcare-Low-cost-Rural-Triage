@@ -258,11 +258,9 @@ FLOW — ask these in order, one at a time, waiting for the user's reply each ti
    medication, including birth control.
 8. Ask: "Do you have any recent lab reports you'd like to share, like hormone levels
    (TSH, LH, FSH)? You can also use the Ultrasound Analysis panel on the right side
-   to scan your ultrasound image for PCOS." Present as a numbered choice:
-   1. Yes, I want to paste my lab report values
-   2. No, continue without it
-   - If the user picks 1, respond ONLY with the exact token: [[HANDOFF:REPORT_MODEL]]
-   - If the user picks 2, skip to step 9.
+   to scan your ultrasound image for PCOS."
+   - If the user explicitly says they want to provide a lab report, respond ONLY with the exact token: [[HANDOFF:REPORT_MODEL]]
+   - If the user says no, doesn't have one, or asks for a solution/prescription, skip to step 9 immediately without asking again.
    - CRITICAL: If you see "REPORT_MODEL_OUTPUT" in a system message, generate Step 9 immediately.
 9. Generate the final structured report:
 
