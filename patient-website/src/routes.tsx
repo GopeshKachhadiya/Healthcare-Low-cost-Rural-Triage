@@ -1,6 +1,7 @@
 import Home from "./pages/Home";
 import Landing from "./pages/Landing";
 import Upload from "./pages/Upload";
+import ComingSoon from "./pages/ComingSoon";
 import ScreeningResult from "./pages/ScreeningResult";
 import Chat from "./pages/Chat";
 import History from "./pages/History";
@@ -31,4 +32,5 @@ export const routesConfig: RouteItem[] = [
   { path: "/hospital", element: <HospitalDashboard /> },
   { path: "/hospital/imaging", element: <HospitalImaging /> },
   { path: "/period-health", element: <PeriodHealthChat /> },
+  { path: "/find-hospital", element: <ComingSoon title="Find a Hospital" /> },
 ];
