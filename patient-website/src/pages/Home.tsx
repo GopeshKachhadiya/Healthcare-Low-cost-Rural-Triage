@@ -47,8 +47,8 @@ export default function Home() {
     {
       to: "/period-health",
       icon: Heart,
-      title: "Period Health Bot",
-      desc: "Menstrual health intake & triage assistant",
+      title: t("home.periodHealth"),
+      desc: t("home.periodHealthDesc"),
       highlight: true,
     },
   ];

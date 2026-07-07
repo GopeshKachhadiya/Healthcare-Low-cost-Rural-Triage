@@ -15,7 +15,7 @@ export default function HospitalImaging() {
     setAiStatus("analyzing");
     setErrorMsg("");
     setAiResult(null);
-    
+
     // Create local preview URL
     const objectUrl = URL.createObjectURL(file);
     setImageUrl(objectUrl);
@@ -38,7 +38,7 @@ export default function HospitalImaging() {
       }
 
       const data = await res.json();
-      
+
       if (modality === "mri") {
         setAiResult({
           type: data.tumor_detected ? "Brain Tumor Detected" : "No Tumor Detected",
@@ -102,25 +102,7 @@ export default function HospitalImaging() {
                   <span className="text-sm font-medium text-ink">Brain MRI Tumor Segmentation</span>
                 </div>
               </label>
-
-              <label className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg border ${modality === 'xray' ? 'border-teal-500 bg-teal-50/50' : 'border-ink/10 hover:bg-ink/5'}`}>
-                <input
-                  type="radio"
-                  name="modality"
-                  className="h-4 w-4 text-teal-600 focus:ring-teal-500"
-                  checked={modality === "xray"}
-                  onChange={() => setModality("xray")}
-                />
-                <div className="flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-teal-600" />
-                  <span className="text-sm font-medium text-ink">Chest X-ray Analysis</span>
-                </div>
-              </label>
             </div>
-          </div>
-          
-          <div className="p-3 bg-blue-50 text-blue-800 text-xs rounded-lg border border-blue-100">
-            <strong>Note:</strong> Uploading an image here will immediately send it to your local PyTorch models on port {modality === 'mri' ? '8002' : '8004'} for inference.
           </div>
         </div>
 
@@ -147,14 +129,14 @@ export default function HospitalImaging() {
             <div className="rounded-xl border border-ink/10 bg-white shadow-sm overflow-hidden">
               <div className="p-4 border-b border-ink/10 bg-teal-50 flex justify-between items-center">
                 <h3 className="font-bold text-teal-900 text-lg">Analysis Complete</h3>
-                <button 
+                <button
                   onClick={() => { setAiStatus("idle"); setAiResult(null); setImageUrl(null); }}
                   className="px-3 py-1 bg-white border border-teal-200 text-teal-700 rounded shadow-sm text-xs font-semibold hover:bg-teal-100"
                 >
                   Analyze Another
                 </button>
               </div>
-              
+
               <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <h4 className="text-xs font-bold uppercase text-ink/50 mb-2">Original Scan</h4>
@@ -166,7 +148,7 @@ export default function HospitalImaging() {
                     </div>
                   )}
                 </div>
-                
+
                 <div>
                   <h4 className="text-xs font-bold uppercase text-ink/50 mb-2">AI Findings</h4>
                   <div className="bg-ink/5 p-4 rounded-lg space-y-4">
@@ -174,12 +156,12 @@ export default function HospitalImaging() {
                       <div className="text-sm font-semibold text-ink/60">Primary Prediction</div>
                       <div className="text-xl font-extrabold text-ink">{aiResult.type}</div>
                     </div>
-                    
+
                     <div>
                       <div className="text-sm font-semibold text-ink/60">Confidence Score</div>
                       <div className="text-lg font-bold text-teal-600">{Math.round(aiResult.confidence * 100)}%</div>
                     </div>
-                    
+
                     {aiResult.predictions && (
                       <div className="pt-2 border-t border-ink/10">
                         <div className="text-xs font-semibold text-ink/60 mb-2">Detailed Class Probabilities:</div>

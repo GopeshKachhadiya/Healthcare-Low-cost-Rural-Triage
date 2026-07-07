@@ -8,7 +8,9 @@
     "scan": "Scan a Skin Rash / Eye",
     "appointments": "My Consultations",
     "history": "Health History",
-    "findClinic": "Locate Nearby PHC"
+    "findClinic": "Locate Nearby PHC",
+    "periodHealth": "Period Health Bot",
+    "periodHealthDesc": "Menstrual health intake & triage assistant"
   },
   "chat": {
     "title": "Ask Anvaya",
