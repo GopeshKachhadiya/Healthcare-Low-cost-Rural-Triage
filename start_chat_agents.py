@@ -5,7 +5,8 @@ import sys
 
 # Map of ONLY the essential chat agents (all lightweight API-based now)
 AGENTS = [
-    ("orchestrators/patient_orchestrator/main.py", 8080),
+    ("orchestrators/patient_orchestrator/main.py", 9000),
+    ("orchestrators/patient_orchestrator/period_chatbot.py", 8001),
     ("rag_agents/rag_pipeline/main.py", 8031),
     ("safety_agents/red_flag_monitor/main.py", 8021),
     ("safety_agents/consent_gate/main.py", 8022),

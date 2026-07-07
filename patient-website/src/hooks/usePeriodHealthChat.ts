@@ -48,7 +48,7 @@ export function usePeriodHealthChat() {
     const hasHindi    = /[\u0900-\u097F]/.test(text);
     const effectiveLang = hasGujarati ? "gu" : hasHindi ? "hi" : "en";
 
-    const res = await fetch("http://localhost:8001/route", {
+    const res = await fetch("http://localhost:9000/route", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
