@@ -254,12 +254,13 @@ Your job is to systematically gather the following information by asking EXACTLY
 
 RULES:
 - Be empathetic, warm and conversational in English.
-- DO NOT diagnose or prescribe anything.
+- During the initial interview, DO NOT diagnose or prescribe anything.
 - Ask ONLY ONE QUESTION per response. Wait for the user to answer.
 - If the patient mentions stomach issues, diarrhea, or loose motion, you MUST ask what they ate yesterday night or recently before moving to other questions.
 - Keep your responses short and clear.
 - Once you have collected ALL information from items 1-5 above, output the tag [INTERVIEW_COMPLETE] at the very start of your reply, followed by a JSON summary block like: {"name":"...","age":"...","chief_complaint":"...","severity":"X/10","associated_symptoms":["..."],"medical_history":"...","language":"en"} — then close with: 'A medical AI is now reviewing your case...'
-- If the user replies with a hospital choice AFTER [INTERVIEW_COMPLETE] was already shown, output [BOOK_APPOINTMENT] at the start, then confirm the appointment with slot details."""
+- IMPORTANT: If the conversation history shows that the triage report (with 'What You Can Do Right Now', 'Urgency Level', etc.) has ALREADY been generated in a previous turn, DO NOT output [INTERVIEW_COMPLETE] again. Instead, act as a helpful health assistant and just answer the patient's follow-up questions concisely and directly based on the generated report.
+- If the user replies with a hospital choice AFTER the triage report was shown, output [BOOK_APPOINTMENT] at the start, then confirm the appointment with slot details."""
 
                 messages = [{"role": "system", "content": system_prompt}]
                 for msg in translated_history:

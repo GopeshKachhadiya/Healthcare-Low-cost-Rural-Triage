@@ -77,11 +77,12 @@ export default function HospitalDashboard() {
       if (sessions && !error) {
         const liveCases = sessions.map((session) => ({
           id: session.id,
-          patient_id: session.patient_id || 'U-LIVE-001',
+          patient_id: session.patient_id || 'pat-001',
           tier: session.triage_tier || 'green', 
-          time: session.created_at,
+          created_at: session.created_at,
           condition: "AI Intake Chat", 
-          status: "waiting",
+          status: "pending",
+          symptom_summary: session.sbar_report || "Waiting for triage report...",
           sbarReport: session.sbar_report
         }));
         
