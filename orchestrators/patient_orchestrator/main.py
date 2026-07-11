@@ -73,6 +73,29 @@ async def _log_to_supabase(client: httpx.AsyncClient, table: str, data: dict):
         print(f"DB log to {table} error: {e}")
     return None
 
+def extract_triage_tier(care_advice_text: str) -> str:
+   """ Extract the triage color flag based on the AI's urgency level emojis or text."""
+   if not care_advice_text:
+       return "green"
+
+   if "🔴" in care_advice_text or "Go to hospital NOW" in care_advice_text:
+    return "red"
+   elif "🟠" in care_advice_text :
+    return "orange"
+   elif "🟡" in care_advice_text or "attention within 24 hours" in care_advice_text:
+    return "yellow"
+   else :
+    return "green"
+
+
+
+
+
+
+
+
+
+
 @app.post("/route")
 async def route_patient_request(req: PatientRequest):
     """
@@ -521,6 +544,29 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
                             "insight_type": "care_advice",
                             "payload": {"advice": translated_care}
                         })
+                        
+                        # ======================================================
+                        # NEW BLOCK: Extract Flag and Save with SBAR Report
+                        # ======================================================
+                        triage_tier = extract_triage_tier(care_advice)
+                        final_sbar_report = sbar_note if 'sbar_note' in locals() else "Report not available."
+                        
+                        try:
+                            await client.patch(
+                                f"{SUPABASE_URL}/rest/v1/chat_sessions?id=eq.{session_id}",
+                                headers={
+                                    "apikey": SUPABASE_KEY,
+                                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                                    "Content-Type": "application/json"
+                                },
+                                json={
+                                    "triage_tier": triage_tier,
+                                    "sbar_report": final_sbar_report
+                                }
+                            )
+                            print(f"  -> Session {session_id} updated | Flag: {triage_tier} | Report Sent")
+                        except Exception as e:
+                            print(f"  -> Failed to update session tier and report: {e}")
                 
                 # Generate TTS base64 audio stream
                 audio_b64 = await text_to_speech(translated_answer, user_lang)

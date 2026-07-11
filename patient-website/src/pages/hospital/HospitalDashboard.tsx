@@ -66,6 +66,37 @@ export default function HospitalDashboard() {
   const [realChatMessages, setRealChatMessages] = useState<any[]>([]);
   const [realCareAdvice, setRealCareAdvice] = useState<any>(null);
 
+  // Fetch Live Queue Cases with their Flags
+  useEffect(() => {
+    const fetchLiveQueue = async () => {
+      const { data: sessions, error } = await supabase
+        .from('chat_sessions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (sessions && !error) {
+        const liveCases = sessions.map((session) => ({
+          id: session.id,
+          patient_id: session.patient_id || 'U-LIVE-001',
+          tier: session.triage_tier || 'green', 
+          time: session.created_at,
+          condition: "AI Intake Chat", 
+          status: "waiting",
+          sbarReport: session.sbar_report
+        }));
+        
+        // Merge with existing MOCK_DB cases, keeping live ones first
+        setCases(prev => {
+           const existingIds = new Set(prev.map(c => c.id));
+           const newCases = liveCases.filter(c => !existingIds.has(c.id));
+           return [...newCases, ...prev];
+        });
+      }
+    };
+    
+    fetchLiveQueue();
+  }, []);
+
   useEffect(() => {
     if (!selectedCaseId) return;
     
@@ -918,6 +949,18 @@ export default function HospitalDashboard() {
                     </h4>
                     <div className="text-xs text-amber-900 whitespace-pre-line leading-relaxed">
                       {realCareAdvice}
+                    </div>
+                  </div>
+                )}
+
+                {/* SBAR Patient Report */}
+                {currentCase?.sbarReport && (
+                  <div className="bg-blue-50/50 p-5 rounded-xl border border-blue-100 shadow-sm">
+                    <h4 className="text-sm font-bold text-blue-800 flex items-center gap-2 mb-3">
+                      <FileText className="h-4 w-4" /> AI Clinical SBAR Report
+                    </h4>
+                    <div className="text-xs text-gray-700 whitespace-pre-wrap bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                      {currentCase.sbarReport}
                     </div>
                   </div>
                 )}
