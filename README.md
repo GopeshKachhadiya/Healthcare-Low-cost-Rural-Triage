@@ -37,6 +37,8 @@ India has **1 doctor per 1,456 people** in rural areas (WHO recommends 1:1,000).
 
 ## 📐 System Architecture
 
+![System Architecture](https://raw.githubusercontent.com/GopeshKachhadiya/Healthcare-Low-cost-Rural-Triage/main/Architecture.png)
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        PATIENT SIDE (React PWA)                     │
@@ -94,7 +96,7 @@ To ensure clinical viability, reliability, and safety of our edge-deployed diagn
 ### 1. PCOS Model Evaluation Dashboard
 Our custom YOLOv8 ovarian ultrasound classifier was trained for 100 epochs and achieves near-perfect classification performance on testing datasets, showing highly reliable detection of cysts and follicles.
 
-![PCOS Model Evaluation Dashboard](test/pcos_model_evaluation_dashboard.png)
+![PCOS Model Evaluation Dashboard](https://raw.githubusercontent.com/GopeshKachhadiya/Healthcare-Low-cost-Rural-Triage/main/test/pcos_model_evaluation_dashboard.png)
 
 #### Key Performance Metrics (PCOS):
 - **Model**: YOLOv8m-cls (30.2 MB) | **Optimizer**: AdamW | **Batch Size**: 32 | **Epochs**: 100
@@ -112,7 +114,7 @@ Our custom YOLOv8 ovarian ultrasound classifier was trained for 100 epochs and a
 ### 2. Skin Disease Model Evaluation Dashboard
 The multi-class skin screening classifier handles 40+ skin diseases categorized into 9 major clinical groups (e.g., Acne, Rosacea, Eczema, Psoriasis, Nail Fungus, Ringworm). It demonstrates extremely high reliability with a macro F1-score of 99.00%.
 
-![Skin Disease Model Evaluation Dashboard](test/skin%20disease%20evaluation.png)
+![Skin Disease Model Evaluation Dashboard](https://raw.githubusercontent.com/GopeshKachhadiya/Healthcare-Low-cost-Rural-Triage/main/test/skin%20disease%20evaluation.png)
 
 #### Key Performance Metrics (Skin Disease):
 - **Model**: YOLOv8n-cls (54.4 MB)
