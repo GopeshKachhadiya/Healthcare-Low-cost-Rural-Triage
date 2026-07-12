@@ -87,6 +87,47 @@ India has **1 doctor per 1,456 people** in rural areas (WHO recommends 1:1,000).
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+## 📊 Model Evaluation Matrices
+
+To ensure clinical viability, reliability, and safety of our edge-deployed diagnostic models, we evaluate them against standard clinical validation datasets. Below are the performance dashboards and key metrics for the **PCOS Ultrasound** and **Skin Disease** screening models.
+
+### 1. PCOS Model Evaluation Dashboard
+Our custom YOLOv8 ovarian ultrasound classifier was trained for 100 epochs and achieves near-perfect classification performance on testing datasets, showing highly reliable detection of cysts and follicles.
+
+![PCOS Model Evaluation Dashboard](test/pcos_model_evaluation_dashboard.png)
+
+#### Key Performance Metrics (PCOS):
+- **Model**: YOLOv8m-cls (30.2 MB) | **Optimizer**: AdamW | **Batch Size**: 32 | **Epochs**: 100
+- **Test Dataset**: 1,179 images (679 infected, 500 non-infected)
+- **Overall Accuracy**: **99.32%** | **Balanced Accuracy**: **99.41%**
+- **Precision**: **100.00%** | **Sensitivity / Recall**: **98.82%** | **Specificity**: **100.00%**
+- **F1-Score**: **99.41%** | **ROC-AUC**: **99.97%**
+- **Confusion Matrix Summary**:
+  - **Non-Infected**: 500 / 500 correctly classified (100.00% Specificity, **0 False Positives**)
+  - **Infected**: 671 / 679 correctly classified (**8 False Negatives**)
+  - **Matthews Correlation Coefficient (MCC)**: **0.9862** | **Log Loss**: **0.0303**
+
+---
+
+### 2. Skin Disease Model Evaluation Dashboard
+The multi-class skin screening classifier handles 40+ skin diseases categorized into 9 major clinical groups (e.g., Acne, Rosacea, Eczema, Psoriasis, Nail Fungus, Ringworm). It demonstrates extremely high reliability with a macro F1-score of 99.00%.
+
+![Skin Disease Model Evaluation Dashboard](test/skin%20disease%20evaluation.png)
+
+#### Key Performance Metrics (Skin Disease):
+- **Model**: YOLOv8n-cls (54.4 MB)
+- **Test Dataset**: 65,555 images across 9 classes
+- **Top-1 Accuracy**: **99.08%** | **Top-5 Accuracy**: **100.00%**
+- **Macro Precision**: **99.05%** | **Macro Recall**: **98.98%** | **Macro F1-Score**: **99.00%**
+- **Macro Specificity**: **99.89%** | **Macro ROC-AUC**: **99.99%**
+- **Per-Class Metrics Highlights**:
+  - **Acne/Rosacea (C1)**: Precision: 1.000, Recall: 1.000, F1: 1.000
+  - **Atopic Dermatitis (C2)**: Precision: 0.993, Recall: 1.000, F1: 0.996
+  - **Eczema (C3)**: Precision: 0.992, Recall: 0.984, F1: 0.988
+  - **Fungal Infections (C4-C6)**: Precision: 1.000, Recall: 1.000, F1: 1.000
+  - **Psoriasis / Lichen Planus (C8)**: Precision: 0.989, Recall: 0.939, F1: 0.964
+- **Prediction Summary**: 64,949 correct predictions, 606 incorrect out of 65,555 total samples. **Cohen's Kappa**: **0.9896** | **Log Loss**: **0.0186**
+
 ---
 
 ## 🗂️ Repository Structure
