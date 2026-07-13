@@ -68,7 +68,7 @@ India has **1 doctor per 1,456 people** in rural areas (WHO recommends 1:1,000).
 │  │  CV AGENTS      │  │  PERIOD CHATBOT     │  │  MONITORING     │  │
 │  │  port 8005      │  │  port 8001          │  │  port 8041      │  │
 │  │  YOLOv8 skin    │  │  YOLOv8 PCOS        │  │  M1 Queue       │  │
-│  │  eye, oral      │  │  OpenRouter LLM     │  │  M2 Dashboard   │  │
+│  │  eye            │  │  OpenRouter LLM     │  │  M2 Dashboard   │  │
 │  └─────────────────┘  └────────────────────┘  │  M3 Follow-ups  │  │
 │                                                └─────────────────┘  │
 │  ┌─────────────────┐  ┌────────────────────┐                        │
@@ -144,7 +144,7 @@ Healthcare-Low-cost-Rural-Triage/
 │       │   ├── Login.tsx           # Dual-mode login (OTP + Staff PIN)
 │       │   ├── Home.tsx            # Patient dashboard with quick actions
 │       │   ├── Chat.tsx            # Multi-turn AI symptom chat
-│       │   ├── Upload.tsx          # Photo scan upload (skin/eye/oral)
+│       │   ├── Upload.tsx          # Photo scan upload (skin/eye)
 │       │   ├── ScreeningResult.tsx # Grad-CAM result + Condition chat
 │       │   ├── FindHospital.tsx    # GPS hospital finder (OpenStreetMap)
 │       │   ├── History.tsx         # Combined scan + appointment timeline
@@ -154,7 +154,7 @@ Healthcare-Low-cost-Rural-Triage/
 │       │   ├── PeriodHealthChat.tsx# Women's menstrual health + PCOS scan
 │       │   └── hospital/
 │       │       ├── HospitalDashboard.tsx  # Full clinical dashboard
-│       │       └── HospitalImaging.tsx    # MRI/X-ray AI interpreter
+│       │       └── HospitalImaging.tsx    # MRI AI interpreter
 │       │
 │       ├── components/             # Reusable UI components
 │       │   ├── GradCamOverlay.tsx  # Heatmap opacity slider
@@ -209,10 +209,8 @@ Healthcare-Low-cost-Rural-Triage/
 │   ├── skin_screener/              # YOLOv8 skin disease (57 MB model) — port 8005
 │   ├── brain_tumor_classifier/     # YOLOv8 Glioma/Meningioma/Pituitary — port 8043
 │   ├── brain_tumor_segmenter/      # Pixel-level tumour segmentation
-│   ├── cancer_screening_engine/    # General oncology screen
-│   ├── imaging_interpreter/        # MRI/X-ray general interpreter
-│   ├── mri_preprocessor/           # DICOM to tensor preprocessing
-│   └── xray_analyzer/              # Chest X-ray pneumonia detector
+│   ├── imaging_interpreter/        # MRI general interpreter
+│   └── mri_preprocessor/           # DICOM to tensor preprocessing
 │
 ├── action_agents/
 │   ├── appointment_manager/        # Books/cancels OPD slots in Supabase
@@ -247,11 +245,8 @@ Healthcare-Low-cost-Rural-Triage/
 │       └── 20260705000000_chatbot_schema.sql
 │
 ├── training/                       # Custom YOLOv8 fine-tuning scripts
-│   ├── train_breast_cancer.py
 │   ├── train_eye_screener.py
-│   ├── train_lung_cancer.py
-│   ├── train_medical_nlp.py
-│   └── train_oral_screener.py
+│   └── train_medical_nlp.py
 │
 ├── run_chatbot.py                  # Convenience launcher for chatbot services
 ├── start_agents.py                 # Batch launcher for all microservices
@@ -293,7 +288,7 @@ Central hub with 6 quick-action cards:
 
 | Card | Route | Description |
 |---|---|---|
-| AI Visual Scan | `/scan` | Photograph skin/eye/oral condition |
+| AI Visual Scan | `/scan` | Photograph skin/eye condition |
 | Symptom Chat | `/chat` | Multi-turn AI intake with voice support |
 | Find Clinic | `/find-hospital` | Live GPS hospital map |
 | History | `/history` | All scans and consultations |
@@ -354,7 +349,6 @@ const effectiveLang = hasGujarati ? "gu" : hasHindi ? "hi" : "en";
 |---|---|---|---|
 | **Skin Photo** | `skin_disease_model.pt` YOLOv8n-cls | 57 MB | 40+ including Melanoma, Eczema, BCC, Scabies, Impetigo |
 | **Eye** | YOLOv8 (eye_disease_model) | ~20 MB | Conjunctivitis, Cataracts, Diabetic Retinopathy |
-| **Oral** | YOLOv8 (oral_disease_model) | ~20 MB | Oral Lesions, Ulcers, Early Cancer Signs |
 
 #### Two-Stage Client-Side Pipeline (runs before any network call)
 
@@ -493,7 +487,7 @@ Accessible at `/hospital` after doctor/staff login.
 - Doctor asks clinical question → pgvector knowledge base returns cited answer from medical guidelines
 
 #### Medical Imaging AI (`/hospital/imaging`)
-- Upload MRI/X-ray/CT → Brain Tumor Classifier Agent H3 (YOLOv8)
+- Upload MRI → Brain Tumor Classifier Agent H3 (YOLOv8)
 - Returns: Glioma / Meningioma / Pituitary / No Tumor + confidence %
 
 #### Area Disease Map
@@ -721,7 +715,7 @@ uvicorn main:app --host 0.0.0.0 --port 8007 --reload
 }
 ```
 
-**Supported `action` values:** `chat` | `screen_skin` | `screen_eye` | `screen_oral` | `book_appointment`
+**Supported `action` values:** `chat` | `screen_skin` | `screen_eye` | `book_appointment`
 
 **Emergency Response:**
 ```json
@@ -780,7 +774,7 @@ uvicorn main:app --host 0.0.0.0 --port 8007 --reload
 Patient-Side
 ├── P0  Patient Orchestrator       Master router — port 8080
 ├── P1  Image Pre-processor        Browser TypeScript — validates image quality
-├── P2  CV Screener                YOLOv8 skin/eye/oral — port 8005
+├── P2  CV Screener                YOLOv8 skin/eye — port 8005
 ├── P3  Result Interpreter         Browser TypeScript — maps YOLO classes to clinical data
 ├── A1  Risk Triage Agent          Groq llama-3.1-8b — binary EMERGENCY/ROUTINE
 ├── A2  Conversational Intake      OpenRouter 70B — multi-turn SATRIA agent
