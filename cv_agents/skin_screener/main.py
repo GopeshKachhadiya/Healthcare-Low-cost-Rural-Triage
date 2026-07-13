@@ -152,7 +152,7 @@ async def get_dynamic_summary(scan_type: str, top_class: str, confidence: float)
                                     "Provide a brief, professional, and empathetic clinical explanation "
                                     "of this condition, its potential causes in low-resource settings, and "
                                     "suggest standard precautions. Do NOT prescribe specific medications. "
-                                    "Keep it under 3-4 sentences."
+                                    "Keep it under 3-4 sentences"
                                 )
                             }
                         ],

@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
-import { LogOut, Activity, LayoutDashboard, Users, Eye } from "lucide-react";
+import { LogOut, Activity, LayoutDashboard, Users, Eye, Calendar } from "lucide-react";
 import { useSession } from "../../hooks/useSession";
 import { useTranslation } from "../../hooks/useTranslation";
 import LanguageDropdown from "./LanguageDropdown";
@@ -7,6 +7,7 @@ import LanguageDropdown from "./LanguageDropdown";
 const STAFF_LINKS = [
   { to: "/hospital", label: "Triage Queue", icon: LayoutDashboard },
   { to: "/hospital?tab=patients", label: "Patients", icon: Users },
+  { to: "/hospital?tab=appointments", label: "Appointments", icon: Calendar },
   { to: "/hospital/imaging", label: "Imaging Suite", icon: Eye },
 ];
 

@@ -66,6 +66,56 @@ export default function HospitalDashboard() {
   const [realChatMessages, setRealChatMessages] = useState<any[]>([]);
   const [realCareAdvice, setRealCareAdvice] = useState<any>(null);
 
+  // --- AI Appointments ---
+  const [aiAppointments, setAiAppointments] = useState<any[]>([]);
+
+  // Fetch AI Appointments
+  useEffect(() => {
+    const fetchAiAppointments = async () => {
+      try {
+        // Fetch from the FastAPI Appointment Manager Agent (Port 8011)
+        const response = await fetch("http://localhost:8011/appointments?source_type=appointment");
+        
+        if (response.ok) {
+          const data = await response.json();
+          // Map to UI format
+          const formattedAppointments = data.map((apt: any) => ({
+            id: apt.appointment_id || apt.id,
+            patient_name: apt.patient_name || 'Patient ' + apt.patient_id.substring(0, 5),
+            date: apt.created_at ? new Date(apt.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            status: apt.status || 'scheduled',
+            source: 'AI Chatbot',
+            notes: apt.reason || apt.notes || 'No notes provided'
+          }));
+          setAiAppointments(formattedAppointments);
+        } else {
+          // If backend isn't ready yet, use mock data as fallback for UI demo
+          setAiAppointments([
+            {
+              id: 'apt-001',
+              patient_name: 'Rahul Sharma',
+              date: new Date().toISOString().split('T')[0],
+              status: 'scheduled',
+              source: 'AI Chatbot',
+              notes: 'Booked automatically by AI triage for high fever.'
+            },
+            {
+              id: 'apt-002',
+              patient_name: 'Priya Patel',
+              date: new Date().toISOString().split('T')[0],
+              status: 'pending',
+              source: 'AI Chatbot',
+              notes: 'Patient requested appointment during symptom check.'
+            }
+          ]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch AI appointments from FastAPI:", err);
+      }
+    };
+    fetchAiAppointments();
+  }, []);
+
   // Fetch Live Queue Cases with their Flags
   useEffect(() => {
     const fetchLiveQueue = async () => {
@@ -1362,10 +1412,57 @@ export default function HospitalDashboard() {
     );
   };
 
+  const renderAppointments = () => {
+    return (
+      <div className="animate-fade-in mx-auto max-w-5xl rounded-xl border border-ink/10 bg-white shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-ink/10 flex justify-between items-center bg-paper/50">
+          <h3 className="font-display text-lg font-bold text-ink">AI Appointments</h3>
+          <div className="text-xs text-ink/50">
+            {/* Note for developer */}
+            Backend TODO: Connect to `appointments` table
+          </div>
+        </div>
+        <table className="w-full text-left text-sm text-ink/80">
+          <thead className="bg-ink/5 text-xs uppercase text-ink/50">
+            <tr>
+              <th className="px-6 py-3">Patient Name</th>
+              <th className="px-6 py-3">Date</th>
+              <th className="px-6 py-3">Status</th>
+              <th className="px-6 py-3">Source</th>
+              <th className="px-6 py-3">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {aiAppointments.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-8 text-center text-ink/50">No AI appointments found.</td>
+              </tr>
+            ) : (
+              aiAppointments.map((apt: any) => (
+                <tr key={apt.id} className="border-b border-ink/5 hover:bg-teal-50/50">
+                  <td className="px-6 py-4 font-bold text-ink">{apt.patient_name}</td>
+                  <td className="px-6 py-4 font-mono text-xs">{apt.date}</td>
+                  <td className="px-6 py-4">
+                    <span className={`rounded-full px-2 py-1 text-xs font-bold uppercase ${apt.status === 'scheduled' ? 'bg-teal-100 text-teal-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {apt.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-xs font-semibold text-teal-600">{apt.source}</td>
+                  <td className="px-6 py-4 text-xs">{apt.notes}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full bg-paper min-h-[calc(100vh-61px)] p-6">
       {activeTab === "queue" && renderQueue()}
       {activeTab === "patients" && renderPatients()}
+      {activeTab === "appointments" && renderAppointments()}
       {renderCaseDetail()}
     </div>
   );
