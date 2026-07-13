@@ -73,6 +73,7 @@ async def _log_to_supabase(client: httpx.AsyncClient, table: str, data: dict):
         print(f"DB log to {table} error: {e}")
     return None
 
+
 def extract_triage_tier(care_advice_text: str) -> str:
    """ Extract the triage color flag based on the AI's urgency level emojis or text."""
    if not care_advice_text:
@@ -87,13 +88,28 @@ def extract_triage_tier(care_advice_text: str) -> str:
    else :
     return "green"
 
+class ScanRequest(BaseModel):
+    image_base64: str
 
-
-
-
-
-
-
+@app.post("/scan-ultrasound")
+async def scan_ultrasound(req: ScanRequest):
+    """
+    Forward ultrasound scan request to Period Chatbot on port 8001.
+    """
+    period_bot_url = os.getenv("PERIOD_BOT_URL", "http://localhost:8001")
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(
+                f"{period_bot_url}/scan-ultrasound",
+                json={"image_base64": req.image_base64}
+            )
+            if resp.status_code == 200:
+                return resp.json()
+            else:
+                raise HTTPException(status_code=resp.status_code, detail=resp.text)
+    except Exception as e:
+        print(f"Failed to route scan to Period Chatbot: {e}")
+        raise HTTPException(status_code=502, detail=f"Period Chatbot scan unavailable: {str(e)}")
 
 
 @app.post("/route")
@@ -626,6 +642,27 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
                     }
 
                 return {"status": "success", "result": cv_result}
+
+            elif req.action == "period_chat":
+                period_bot_url = os.getenv("PERIOD_BOT_URL", "http://localhost:8001")
+                try:
+                    resp_period = await client.post(
+                        f"{period_bot_url}/route",
+                        json={
+                            "patient_id": req.patient_id,
+                            "session_id": req.session_id,
+                            "action": req.action,
+                            "payload": req.payload
+                        },
+                        timeout=60.0
+                    )
+                    if resp_period.status_code == 200:
+                        return resp_period.json()
+                    else:
+                        raise HTTPException(status_code=resp_period.status_code, detail=resp_period.text)
+                except Exception as e:
+                    print(f"Failed to route to Period Chatbot: {e}")
+                    raise HTTPException(status_code=502, detail=f"Period Chatbot unavailable: {str(e)}")
 
             elif req.action == "book_appointment":
                 appt_resp = await client.post(f"{A1_URL}/create", json={

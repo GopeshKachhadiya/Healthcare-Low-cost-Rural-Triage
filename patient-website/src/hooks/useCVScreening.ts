@@ -102,7 +102,7 @@ export function useCVScreening() {
         // Call Patient Orchestrator Route to log CV result & auto-escalate if Red/Orange
         try {
           const routeAction = modality === "skin_photo" ? "screen_skin" : modality === "eye" ? "screen_eye" : "screen_oral";
-          const response = await fetch("http://127.0.0.1:8080/route", {
+          const response = await fetch("http://127.0.0.1:9000/route", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

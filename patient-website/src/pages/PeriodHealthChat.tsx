@@ -148,7 +148,7 @@ export default function PeriodHealthChat() {
   const handleMicClick = async () => {
     if (isRecording) {
       if (timerRef.current) clearTimeout(timerRef.current);
-      const text = await stopRecording("hi", "http://localhost:8001/transcribe");
+      const text = await stopRecording("hi", "http://localhost:9000/transcribe");
       if (text) {
         if (phase === "AWAITING_REPORT") {
           submitReport(text);
@@ -159,7 +159,7 @@ export default function PeriodHealthChat() {
     } else {
       startRecording();
       timerRef.current = setTimeout(async () => {
-        const text = await stopRecording("hi", "http://localhost:8001/transcribe");
+        const text = await stopRecording("hi", "http://localhost:9000/transcribe");
         if (text) {
           if (phase === "AWAITING_REPORT") {
             submitReport(text);
@@ -293,7 +293,7 @@ export default function PeriodHealthChat() {
     setHeatmapOpacity(0.55);
     setShowHeatmap(true);
     try {
-      const res = await fetch("http://localhost:8001/scan-ultrasound", {
+      const res = await fetch("http://localhost:9000/scan-ultrasound", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image_base64: selectedImage }),
