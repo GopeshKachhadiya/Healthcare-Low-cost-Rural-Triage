@@ -65,7 +65,14 @@ export default function Home() {
     ...appointments.map((a) => ({
       id: a.id,
       title: `Consultation — ${a.doctorName.split(" (")[0]}`,
-      meta: `${new Date(a.date).toLocaleDateString()} · ${a.facilityName.split(" Primary")[0]}`,
+      meta: (() => {
+        try {
+          const d = new Date(a.date);
+          return isNaN(d.getTime()) ? a.date : d.toLocaleDateString() + ` · ${a.facilityName.split(" Primary")[0]}`;
+        } catch {
+          return `${a.date} · ${a.facilityName.split(" Primary")[0]}`;
+        }
+      })(),
       tier: a.priority,
       to: `/appointments/${a.id}`,
     })),

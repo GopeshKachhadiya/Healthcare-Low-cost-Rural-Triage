@@ -32,16 +32,26 @@ export default function History() {
       tier: s.tier,
       link: `/scan/result/${s.id}`,
     })),
-    ...appointments.map((a) => ({
-      type: "appointment" as const,
-      id: a.id,
-      title: `Consultation: ${a.doctorName}`,
-      meta: `${a.facilityName} · Status: ${a.status.toUpperCase()}`,
-      date: new Date(a.date),
-      tier: a.priority,
-      link: `/appointments/${a.id}`,
-      prescription: a.prescription,
-    })),
+    ...appointments.map((a) => {
+      let parsedDate = new Date();
+      try {
+        const d = new Date(a.date);
+        if (!isNaN(d.getTime())) {
+          parsedDate = d;
+        }
+      } catch (e) {}
+      return {
+        type: "appointment" as const,
+        id: a.id,
+        title: `Consultation: ${a.doctorName}`,
+        meta: `${a.facilityName} · Status: ${a.status.toUpperCase()}`,
+        date: parsedDate,
+        dateStr: a.date,
+        tier: a.priority,
+        link: `/appointments/${a.id}`,
+        prescription: a.prescription,
+      };
+    }),
     ...(chatHistory.length > 0
       ? [
           {
@@ -110,7 +120,13 @@ export default function History() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <span className="text-[10px] font-bold text-ink/40 uppercase tracking-wider block">
-                      {item.type.toUpperCase()} · {item.date.toLocaleDateString()}
+                      {item.type.toUpperCase()} · {(() => {
+                        try {
+                          return isNaN(item.date.getTime()) ? (item as any).dateStr || "Today" : item.date.toLocaleDateString();
+                        } catch {
+                          return (item as any).dateStr || "Today";
+                        }
+                      })()}
                     </span>
                     <h3 className="font-semibold text-ink text-base mt-0.5">{item.title}</h3>
                     <p className="text-xs text-ink/50 mt-0.5">{item.meta}</p>

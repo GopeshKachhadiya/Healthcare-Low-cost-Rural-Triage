@@ -88,7 +88,7 @@ export function AppContextProvider({ children }: { children: React.ReactNode }) 
       gender: "Male",
       village: "Chandpur",
       abhaId: "14-8890-4321-7756",
-      preferredLanguage: "hi",
+      preferredLanguage: "en",
     };
   });
 
@@ -184,7 +184,7 @@ export function AppContextProvider({ children }: { children: React.ReactNode }) 
       gender: "Male",
       village: "Chandpur",
       abhaId: "14-8890-4321-7756",
-      preferredLanguage: "hi",
+      preferredLanguage: "en",
     });
   };
 

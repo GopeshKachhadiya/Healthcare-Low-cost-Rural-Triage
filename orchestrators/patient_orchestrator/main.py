@@ -33,6 +33,9 @@ print(f"---------------------")
 
 app = FastAPI(title="Patient Orchestrator API", description="Master Agent P0 — routes all patient-side interactions")
 
+# In-memory local sessions database fallback (used when Supabase is offline/unconfigured)
+local_sessions_db = {}
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -112,6 +115,45 @@ async def scan_ultrasound(req: ScanRequest):
         raise HTTPException(status_code=502, detail=f"Period Chatbot scan unavailable: {str(e)}")
 
 
+def extract_details_from_history(history, current_text):
+    name = "Patient"
+    complaint = "Intake completed via chatbot"
+    
+    import re
+    # Match name: start with common intros, capture letters only, stopping at common stop-words
+    name_patterns = [
+        r"(?:my name is|i am|this is|call me)\s+([A-Za-z]{2,15}(?:\s+[A-Za-z]{2,15})?)",
+        r"(?:name\s*:\s*)\s*([A-Za-z]{2,15}(?:\s+[A-Za-z]{2,15})?)"
+    ]
+    
+    all_turns = [msg.get("content", "") for msg in history] + [current_text]
+    for turn in all_turns:
+        # Strip common punctuation
+        turn_clean = re.sub(r'[,.!?]', ' ', turn)
+        for pattern in name_patterns:
+            match = re.search(pattern, turn_clean, re.IGNORECASE)
+            if match:
+                extracted = match.group(1).strip()
+                words = extracted.split()
+                filtered_words = []
+                for w in words:
+                    if w.lower() in ["and", "age", "is", "years", "old", "the", "a", "an"]:
+                        break
+                    filtered_words.append(w.capitalize())
+                if filtered_words:
+                    name = " ".join(filtered_words)
+                    break
+        
+        # Extract complaint (the first turn where user states pain or symptoms)
+        turn_lower = turn.lower()
+        if complaint == "Intake completed via chatbot":
+            if any(k in turn_lower for k in ["pain", "ache", "fever", "cough", "vomit", "sick", "bleed", "hurt", "swollen"]):
+                words = turn.split()
+                complaint = " ".join(words[:12])
+                
+    return name, complaint
+
+
 @app.post("/route")
 async def route_patient_request(req: PatientRequest):
     """
@@ -149,13 +191,31 @@ async def route_patient_request(req: PatientRequest):
                 
                 # --- Create or Retrieve Chat Session ---
                 session_id = req.session_id
-                if not session_id and SUPABASE_URL:
-                    session_record = await _log_to_supabase(client, "chat_sessions", {
-                        "patient_id": req.patient_id,
-                        "status": "active"
-                    })
-                    if session_record:
-                        session_id = session_record.get("id")
+                if not session_id:
+                    if SUPABASE_URL and SUPABASE_KEY and "your-project" not in SUPABASE_URL:
+                        session_record = await _log_to_supabase(client, "chat_sessions", {
+                            "patient_id": req.patient_id,
+                            "status": "active"
+                        })
+                        if session_record:
+                            session_id = session_record.get("id")
+                    
+                    if not session_id:
+                        import uuid
+                        session_id = f"local-session-{uuid.uuid4().hex[:8]}"
+
+                # Initialize local session fallback record if not present
+                if session_id and session_id not in local_sessions_db:
+                    import datetime
+                    profile = req.payload.get("patient_profile") or {}
+                    if not profile and req.patient_id:
+                        profile = {"phone": req.patient_id, "patient_id": req.patient_id}
+                    local_sessions_db[session_id] = {
+                        "profile": profile,
+                        "triage_tier": "Green",
+                        "sbar_report": "Waiting for triage report...",
+                        "created_at": datetime.datetime.now().isoformat()
+                    }
 
                 # Log user message
                 if session_id:
@@ -317,16 +377,89 @@ RULES:
                     rag_answer = "Service configuration error. Please contact support."
                     
                         
-                # Handle special tags from Agent 2
-                if "[BOOK_APPOINTMENT]" in rag_answer:
-                    rag_answer = rag_answer.replace("[BOOK_APPOINTMENT]", "").strip()
-                    # Auto escalate to appointment agent
+                is_booking_request = "[BOOK_APPOINTMENT]" in rag_answer or "BOOK_APPOINTMENT" in rag_answer
+                user_msg_lower = english_text.lower()
+                has_hospital_choice = any(h in user_msg_lower for h in ["rural care clinic", "chandpur primary", "district general", "saraswati women", "asha maternity"])
+                has_booking_intent = any(k in user_msg_lower for k in ["book appointment", "book an appointment", "confirm booking", "schedule appointment"])
+                
+                already_booked = False
+                if session_id and session_id in local_sessions_db:
+                    already_booked = local_sessions_db[session_id].get("appointment_booked", False)
+
+                if (is_booking_request or has_hospital_choice or has_booking_intent) and not already_booked:
+                    if session_id and session_id in local_sessions_db:
+                        local_sessions_db[session_id]["appointment_booked"] = True
+                    for tag in ["[BOOK_APPOINTMENT]", "BOOK_APPOINTMENT"]:
+                        rag_answer = rag_answer.replace(tag, "").strip()
+                    # Auto escalate to appointment agent with real details
                     try:
+                        patient_name = "Patient"
+                        reason = "Intake completed via chatbot"
+                        urgency_tier = "Green"
+                        
+                        if session_id and session_id in local_sessions_db:
+                            profile = local_sessions_db[session_id].get("profile", {})
+                            patient_name = profile.get("name", patient_name)
+                            reason = profile.get("chief_complaint", reason)
+                            urgency_tier = local_sessions_db[session_id].get("triage_tier", urgency_tier).capitalize()
+
+                        if patient_name == "Patient" or reason == "Intake completed via chatbot":
+                            h_name, h_reason = extract_details_from_history(translated_history, english_text)
+                            if patient_name == "Patient":
+                                patient_name = h_name
+                            if reason == "Intake completed via chatbot":
+                                reason = h_reason
+
+                        if patient_name == "Patient" and session_id and SUPABASE_URL and SUPABASE_KEY and "your-project" not in SUPABASE_URL:
+                            try:
+                                resp_profile = await client.get(
+                                    f"{SUPABASE_URL}/rest/v1/agent_insights?session_id=eq.{session_id}&insight_type=eq.patient_profile",
+                                    headers={
+                                        "apikey": SUPABASE_KEY,
+                                        "Authorization": f"Bearer {SUPABASE_KEY}"
+                                    }
+                                )
+                                if resp_profile.status_code == 200 and resp_profile.json():
+                                    profile = resp_profile.json()[0].get("payload", {})
+                                    patient_name = profile.get("name", patient_name)
+                                    reason = profile.get("chief_complaint", reason)
+                            except Exception as pe:
+                                print("Failed to fetch profile from Supabase:", pe)
+
+                        hospital_id = "Rural Care Clinic"
+                        user_input_lower = english_text.lower()
+                        if "chandpur" in user_input_lower or "1" in user_input_lower:
+                            hospital_id = "Chandpur Primary Health Centre"
+                        elif "district" in user_input_lower or "2" in user_input_lower:
+                            hospital_id = "District General Hospital"
+                        elif "saraswati" in user_input_lower:
+                            hospital_id = "Saraswati Women's Clinic"
+                        elif "asha" in user_input_lower:
+                            hospital_id = "Asha Maternity & Women's Care Centre"
+                        elif "rural" in user_input_lower or "3" in user_input_lower:
+                            hospital_id = "Rural Care Clinic"
+
+                        if urgency_tier == "Green" and session_id and SUPABASE_URL and SUPABASE_KEY and "your-project" not in SUPABASE_URL:
+                            try:
+                                session_resp = await client.get(
+                                    f"{SUPABASE_URL}/rest/v1/chat_sessions?id=eq.{session_id}",
+                                    headers={
+                                        "apikey": SUPABASE_KEY,
+                                        "Authorization": f"Bearer {SUPABASE_KEY}"
+                                    }
+                                )
+                                if session_resp.status_code == 200 and session_resp.json():
+                                    urgency_tier = session_resp.json()[0].get("triage_tier", "Green").capitalize()
+                            except Exception as te:
+                                print("Failed to fetch session tier:", te)
+
+                        print(f"Booking appointment: Patient={patient_name}, Hospital={hospital_id}, Tier={urgency_tier}, Reason={reason}")
                         await client.post(f"{A1_URL}/create", json={
                             "patient_id": req.patient_id,
-                            "hospital_id": "selected_hospital",
-                            "reason": "Intake completed via chatbot",
-                            "urgency_tier": "Green"
+                            "patient_name": patient_name,
+                            "hospital_id": hospital_id,
+                            "reason": reason,
+                            "urgency_tier": urgency_tier
                         })
                     except Exception as e:
                         print("Failed to book:", e)
@@ -344,6 +477,10 @@ RULES:
                         if json_match:
                             patient_summary_json = json.loads(json_match.group())
                             if session_id:
+                                if session_id not in local_sessions_db:
+                                    local_sessions_db[session_id] = {"profile": {}, "triage_tier": "Green", "sbar_report": ""}
+                                local_sessions_db[session_id]["profile"] = patient_summary_json
+                                
                                 await _log_to_supabase(client, "agent_insights", {
                                     "session_id": session_id,
                                     "insight_type": "patient_profile",
@@ -568,22 +705,29 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
                         triage_tier = extract_triage_tier(care_advice)
                         final_sbar_report = sbar_note if 'sbar_note' in locals() else "Report not available."
                         
-                        try:
-                            await client.patch(
-                                f"{SUPABASE_URL}/rest/v1/chat_sessions?id=eq.{session_id}",
-                                headers={
-                                    "apikey": SUPABASE_KEY,
-                                    "Authorization": f"Bearer {SUPABASE_KEY}",
-                                    "Content-Type": "application/json"
-                                },
-                                json={
-                                    "triage_tier": triage_tier,
-                                    "sbar_report": final_sbar_report
-                                }
-                            )
-                            print(f"  -> Session {session_id} updated | Flag: {triage_tier} | Report Sent")
-                        except Exception as e:
-                            print(f"  -> Failed to update session tier and report: {e}")
+                        if session_id:
+                            if session_id not in local_sessions_db:
+                                local_sessions_db[session_id] = {"profile": {}, "triage_tier": "Green", "sbar_report": ""}
+                            local_sessions_db[session_id]["triage_tier"] = triage_tier
+                            local_sessions_db[session_id]["sbar_report"] = final_sbar_report
+                        
+                        if SUPABASE_URL and SUPABASE_KEY and "your-project" not in SUPABASE_URL:
+                            try:
+                                await client.patch(
+                                    f"{SUPABASE_URL}/rest/v1/chat_sessions?id=eq.{session_id}",
+                                    headers={
+                                        "apikey": SUPABASE_KEY,
+                                        "Authorization": f"Bearer {SUPABASE_KEY}",
+                                        "Content-Type": "application/json"
+                                    },
+                                    json={
+                                        "triage_tier": triage_tier,
+                                        "sbar_report": final_sbar_report
+                                    }
+                                )
+                                print(f"  -> Session {session_id} updated | Flag: {triage_tier} | Report Sent")
+                            except Exception as e:
+                                print(f"  -> Failed to update session tier and report: {e}")
                 
                 # Generate TTS base64 audio stream
                 audio_b64 = await text_to_speech(translated_answer, user_lang)
@@ -694,6 +838,22 @@ async def transcribe_audio(file: UploadFile = File(...), language: str = "hi"):
         return {"status": "success", "transcript": transcript}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@app.get("/sessions")
+async def get_sessions():
+    import datetime
+    sessions_list = []
+    for sid, data in local_sessions_db.items():
+        profile = data.get("profile", {})
+        sessions_list.append({
+            "id": sid,
+            "patient_id": profile.get("phone") or profile.get("patient_id") or "pat-live",
+            "triage_tier": data.get("triage_tier", "Green"),
+            "sbar_report": data.get("sbar_report", "No report available."),
+            "patient_profile": profile,
+            "created_at": data.get("created_at") or datetime.datetime.now().isoformat()
+        })
+    return sessions_list
 
 if __name__ == "__main__":
     import uvicorn

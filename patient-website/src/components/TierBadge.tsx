@@ -43,7 +43,8 @@ const TIER_CONFIG: Record<
 // Never relies on color alone — icon + text label always present,
 // per patient.md §15.1 "Color + icon + text for tier".
 export default function TierBadge({ tier, size = "md" }: { tier: Tier; size?: "sm" | "md" }) {
-  const cfg = TIER_CONFIG[tier];
+  const normalizedTier = (tier || "green").toLowerCase() as Tier;
+  const cfg = TIER_CONFIG[normalizedTier] || TIER_CONFIG.green;
   const Icon = cfg.icon;
   const isCompact = size === "sm";
 

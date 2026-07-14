@@ -1,7 +1,13 @@
 import { useApp } from "../context/AppContext";
+import { useRef } from "react";
 
 export function useChat() {
   const { chatHistory, addChatMessage, addAppointment, clearChat, user } = useApp();
+  
+  const sessionIdRef = useRef<string | null>(null);
+  if (!sessionIdRef.current) {
+    sessionIdRef.current = `session-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  }
 
   const isRedFlagActive = chatHistory.some((m) => m.isRedFlag);
 
@@ -26,10 +32,19 @@ export function useChat() {
         },
         body: JSON.stringify({
           patient_id: user?.phone || "+91 98765 43210",
+          session_id: sessionIdRef.current,
           action: "chat",
           payload: { 
             text,
             condition,
+            patient_profile: user ? {
+              name: user.name,
+              phone: user.phone,
+              village: user.village,
+              abha_id: user.abhaId,
+              gender: user.gender === "Male" ? "M" : "F",
+              age: 20
+            } : null,
             history: chatHistory.map(m => ({
               role: m.sender === "bot" ? "assistant" : "user",
               content: m.text
@@ -176,10 +191,15 @@ export function useChat() {
     });
   };
 
+  const clearChatWithSession = () => {
+    clearChat();
+    sessionIdRef.current = `session-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  };
+
   return {
     chatHistory,
     sendMessage,
-    clearChat,
+    clearChat: clearChatWithSession,
     isRedFlagActive,
   };
 }

@@ -27,12 +27,11 @@ AGENTS = [
     ("action_agents/drug_interaction_checker/main.py", 8015),
     ("action_agents/referral_manager/main.py", 8016),
     
-    # CV & Imaging Agents (Commented out to prevent RAM crash / HuggingFace downloads)
     # ("cv_agents/mri_preprocessor/main.py", 8008),
-    # ("cv_agents/brain_tumor_segmenter/main.py", 8002),
-    # ("cv_agents/brain_tumor_classifier/main.py", 8003),
+    ("cv_agents/brain_tumor_segmenter/main.py", 8002),
+    ("cv_agents/brain_tumor_classifier/main.py", 8003),
     # ("cv_agents/xray_analyzer/main.py", 8004),
-    # ("cv_agents/skin_screener/main.py", 8005),
+    ("cv_agents/skin_screener/main.py", 8005),
     # ("cv_agents/cancer_screening_engine/main.py", 8009),
     # ("cv_agents/imaging_interpreter/main.py", 8007),
     

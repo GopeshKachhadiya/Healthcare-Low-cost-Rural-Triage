@@ -30,7 +30,8 @@ SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY") or os.getenv("SUPABASE_KEY")
 pcos_model = None
 try:
     from ultralytics import YOLO
-    model_path = os.path.join(os.path.dirname(__file__), "PCOS_model_epcoh%3D100.pt")
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(current_dir, "../../models/PCOS_model_epoch%3D100.pt")
     if os.path.exists(model_path):
         pcos_model = YOLO(model_path)
         print("[Info] YOLO PCOS Model loaded successfully.")
@@ -153,7 +154,7 @@ def run_yolo(image_base64: str) -> dict:
             cls_id = int(probs.top1)
             confidence = float(probs.top1conf.item())
             label = result.names[cls_id]
-            infected = "infected" in label.lower() or "pcos" in label.lower()
+            infected = ("infected" in label.lower() or "pcos" in label.lower()) and "non" not in label.lower()
 
             if infected:
                 flag = "abnormal"
@@ -187,7 +188,7 @@ def run_yolo(image_base64: str) -> dict:
             cls_id = int(boxes.cls[best_idx].item())
             confidence = float(boxes.conf[best_idx].item())
             label = result.names[cls_id]
-            infected = "infected" in label.lower() or "pcos" in label.lower()
+            infected = ("infected" in label.lower() or "pcos" in label.lower()) and "non" not in label.lower()
 
             if infected:
                 flag = "abnormal"

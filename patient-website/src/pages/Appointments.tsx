@@ -129,7 +129,16 @@ export default function Appointments() {
                 <div className="flex items-center gap-4">
                   <div>
                     <span className="text-[10px] font-bold text-ink/40 uppercase block">Date</span>
-                    <span>{new Date(apt.date).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}</span>
+                    <span>
+                      {(() => {
+                        try {
+                          const d = new Date(apt.date);
+                          return isNaN(d.getTime()) ? apt.date : d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+                        } catch {
+                          return apt.date;
+                        }
+                      })()}
+                    </span>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-ink/40 uppercase block">Time Slot</span>

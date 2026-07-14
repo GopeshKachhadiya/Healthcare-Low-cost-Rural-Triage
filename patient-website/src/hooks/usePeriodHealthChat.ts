@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { useApp } from "../context/AppContext";
 
 export type ChatPhase = "NORMAL" | "AWAITING_REPORT" | "DONE";
 
@@ -26,6 +27,7 @@ interface OpenRouterMessage {
 }
 
 export function usePeriodHealthChat() {
+  const { addAppointment } = useApp();
   const [messages, setMessages] = useState<PeriodMessage[]>([]);
   const [phase, setPhase] = useState<ChatPhase>("NORMAL");
   const [isLoading, setIsLoading] = useState(false);
@@ -114,6 +116,32 @@ export function usePeriodHealthChat() {
           setPhase("AWAITING_REPORT");
         } else if (isBookingConfirm) {
           setPhase("DONE");
+          
+          let facilityName = "District General Hospital";
+          const facilityMatch = reply.match(/(?:Hospital|facility):\s*([^\n\r]+)/i);
+          if (facilityMatch) {
+            facilityName = facilityMatch[1].trim();
+          }
+
+          let doctorName = "Dr. Rohan (Orthopedic Specialist)";
+          const doctorMatch = reply.match(/(?:Doctor|consultant):\s*([^\n\r]+)/i);
+          if (doctorMatch) {
+            doctorName = doctorMatch[1].trim();
+          }
+
+          let priority: "green" | "yellow" | "orange" | "red" = "yellow";
+          if (isEmergency || /Emergency/i.test(reply) || /Critical/i.test(reply)) {
+            priority = "red";
+          } else if (/urgent/i.test(reply) || /abnormal/i.test(reply) || /infected/i.test(reply)) {
+            priority = "orange";
+          }
+
+          addAppointment({
+            doctorName,
+            facilityName,
+            priority,
+            reason: "Period & PCOS Health Consultation booked via Chatbot",
+          });
         }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
@@ -155,6 +183,32 @@ export function usePeriodHealthChat() {
 
         if (isBookingConfirm) {
           setPhase("DONE");
+          
+          let facilityName = "District General Hospital";
+          const facilityMatch = reply.match(/(?:Hospital|facility):\s*([^\n\r]+)/i);
+          if (facilityMatch) {
+            facilityName = facilityMatch[1].trim();
+          }
+
+          let doctorName = "Dr. Rohan (Orthopedic Specialist)";
+          const doctorMatch = reply.match(/(?:Doctor|consultant):\s*([^\n\r]+)/i);
+          if (doctorMatch) {
+            doctorName = doctorMatch[1].trim();
+          }
+
+          let priority: "green" | "yellow" | "orange" | "red" = "yellow";
+          if (isEmergency || /Emergency/i.test(reply) || /Critical/i.test(reply)) {
+            priority = "red";
+          } else if (/urgent/i.test(reply) || /abnormal/i.test(reply) || /infected/i.test(reply)) {
+            priority = "orange";
+          }
+
+          addAppointment({
+            doctorName,
+            facilityName,
+            priority,
+            reason: "Period & PCOS Health Consultation booked via Chatbot",
+          });
         } else {
           setPhase("NORMAL"); 
         }

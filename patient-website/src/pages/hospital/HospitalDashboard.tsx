@@ -85,7 +85,8 @@ export default function HospitalDashboard() {
             date: apt.created_at ? new Date(apt.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             status: apt.status || 'scheduled',
             source: 'AI Chatbot',
-            notes: apt.reason || apt.notes || 'No notes provided'
+            notes: apt.reason || apt.notes || 'No notes provided',
+            tier: apt.urgency_tier || apt.tier || 'green'
           }));
           setAiAppointments(formattedAppointments);
         } else {
@@ -97,7 +98,8 @@ export default function HospitalDashboard() {
               date: new Date().toISOString().split('T')[0],
               status: 'scheduled',
               source: 'AI Chatbot',
-              notes: 'Booked automatically by AI triage for high fever.'
+              notes: 'Booked automatically by AI triage for high fever.',
+              tier: 'red'
             },
             {
               id: 'apt-002',
@@ -105,7 +107,8 @@ export default function HospitalDashboard() {
               date: new Date().toISOString().split('T')[0],
               status: 'pending',
               source: 'AI Chatbot',
-              notes: 'Patient requested appointment during symptom check.'
+              notes: 'Patient requested appointment during symptom check.',
+              tier: 'yellow'
             }
           ]);
         }
@@ -119,28 +122,196 @@ export default function HospitalDashboard() {
   // Fetch Live Queue Cases with their Flags
   useEffect(() => {
     const fetchLiveQueue = async () => {
-      const { data: sessions, error } = await supabase
-        .from('chat_sessions')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let sessionsData: any[] = [];
+      let fetchSuccess = false;
 
-      if (sessions && !error) {
-        const liveCases = sessions.map((session) => ({
-          id: session.id,
-          patient_id: session.patient_id || 'pat-001',
-          tier: session.triage_tier || 'green', 
-          created_at: session.created_at,
-          condition: "AI Intake Chat", 
-          status: "pending",
-          symptom_summary: session.sbar_report || "Waiting for triage report...",
-          sbarReport: session.sbar_report
-        }));
-        
-        // Merge with existing MOCK_DB cases, keeping live ones first
+      // 1. Try to fetch from local Patient Orchestrator sessions endpoint
+      try {
+        const resp = await fetch("http://localhost:9000/sessions");
+        if (resp.ok) {
+          const localSessions = await resp.json();
+          sessionsData = localSessions;
+          fetchSuccess = true;
+        }
+      } catch (err) {
+        console.error("Local sessions fetch failed, trying Supabase...", err);
+      }
+
+      // Fallback to Supabase if local fetch fails or is unconfigured
+      if (!fetchSuccess) {
+        try {
+          const { data: sessions, error } = await supabase
+            .from('chat_sessions')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (sessions && !error) {
+            const { data: insights } = await supabase
+              .from('agent_insights')
+              .select('*')
+              .eq('insight_type', 'patient_profile');
+
+            const profileMap: Record<string, any> = {};
+            if (insights) {
+              insights.forEach((insight) => {
+                profileMap[insight.session_id] = insight.payload;
+              });
+            }
+
+            sessionsData = sessions.map(s => ({
+              id: s.id,
+              patient_id: s.patient_id,
+              triage_tier: s.triage_tier,
+              sbar_report: s.sbar_report,
+              patient_profile: profileMap[s.id] || {},
+              created_at: s.created_at
+            }));
+          }
+        } catch (sErr) {
+          console.error("Supabase fetch failed:", sErr);
+        }
+      }
+
+      // 2. Fetch live appointments from the Appointment Manager (Port 8011)
+      let appointmentsData: any[] = [];
+      try {
+        const aptResp = await fetch("http://localhost:8011/appointments?source_type=appointment");
+        if (aptResp.ok) {
+          appointmentsData = await aptResp.json();
+        }
+      } catch (err) {
+        console.error("Failed to fetch appointments in fetchLiveQueue:", err);
+      }
+
+      // 3. Process sessionsData and appointmentsData, populating queue and patient registry
+      const newPatients: any[] = [];
+      const liveCases: any[] = [];
+
+      const addPatientSafely = (
+        patPhone: string,
+        pName: string,
+        pAge: number,
+        pGender: string,
+        tier: string,
+        village: string,
+        abhaId: string,
+        registeredAt: string
+      ) => {
+        const newPat = {
+          id: patPhone,
+          name: pName,
+          age: pAge,
+          gender: pGender,
+          village: village || "Chandpur",
+          abha_id: abhaId || "ABHA-2026-LIVE-CHAT",
+          blood_group: "O+",
+          facility_id: "fac-001",
+          known_conditions: [],
+          allergies: [],
+          current_tier: tier.toLowerCase(),
+          registered_at: registeredAt,
+          language: "English"
+        };
+
+        if (!newPatients.some(p => p.id === patPhone) && !MOCK_DB.patients.some(p => p.id === patPhone)) {
+          newPatients.push(newPat);
+        }
+      };
+
+      // Process sessions first
+      if (sessionsData && sessionsData.length > 0) {
+        sessionsData.forEach((session: any) => {
+          const profile = session.patient_profile || {};
+          const patPhone = session.patient_id || 'pat-001';
+          const pName = profile.name || "Patient " + patPhone.slice(-4);
+          const pAge = profile.age ? parseInt(profile.age) : 20;
+          const pGender = profile.gender || "M";
+          const tier = (session.triage_tier || 'green').toLowerCase();
+          const registeredAt = new Date(session.created_at).toISOString().split("T")[0];
+
+          addPatientSafely(
+            patPhone,
+            pName,
+            pAge,
+            pGender,
+            tier,
+            profile.village,
+            profile.abha_id || `ABHA-${patPhone.slice(-4)}`,
+            registeredAt
+          );
+
+          liveCases.push({
+            id: session.id,
+            patient_id: patPhone,
+            patient_name: pName,
+            patient_age: pAge + "y",
+            patient_gender: pGender,
+            tier: tier, 
+            created_at: session.created_at,
+            condition: "AI Intake Chat", 
+            status: "pending",
+            symptom_summary: session.sbar_report || "Waiting for triage report...",
+            sbarReport: session.sbar_report
+          });
+        });
+      }
+
+      // Process appointments to synthesize cases and patients
+      if (appointmentsData && appointmentsData.length > 0) {
+        appointmentsData.forEach((apt: any) => {
+          const patPhone = apt.patient_id || 'pat-001';
+          const pName = apt.patient_name || "Patient " + patPhone.slice(-4);
+          const pAge = apt.patient_age ? parseInt(apt.patient_age) : 20;
+          const pGender = apt.patient_gender || "M";
+          const tier = (apt.urgency_tier || apt.tier || 'green').toLowerCase();
+          const createdTime = apt.created_at || new Date().toISOString();
+          const registeredAt = new Date(createdTime).toISOString().split("T")[0];
+
+          addPatientSafely(
+            patPhone,
+            pName,
+            pAge,
+            pGender,
+            tier,
+            apt.village || "Chandpur",
+            apt.abha_id || `ABHA-${patPhone.slice(-4)}`,
+            registeredAt
+          );
+
+          // Only add to liveCases if not already present (match by patient_id)
+          if (!liveCases.some(c => c.patient_id === patPhone)) {
+            liveCases.push({
+              id: apt.appointment_id || apt.id || `apt-case-${patPhone}`,
+              patient_id: patPhone,
+              patient_name: pName,
+              patient_age: pAge + "y",
+              patient_gender: pGender,
+              tier: tier,
+              created_at: createdTime,
+              condition: "AI Appointment",
+              status: "pending",
+              symptom_summary: apt.reason || apt.notes || "Booked through AI Chatbot.",
+              sbarReport: `Situation: Patient ${pName} has a booked appointment.\nReason: ${apt.reason || apt.notes || 'No details provided.'}`
+            });
+          }
+        });
+      }
+
+      // Merge and update cases state (overwrite matched keys, keep mock/previous cases)
+      if (liveCases.length > 0) {
         setCases(prev => {
-           const existingIds = new Set(prev.map(c => c.id));
-           const newCases = liveCases.filter(c => !existingIds.has(c.id));
-           return [...newCases, ...prev];
+          const newIds = new Set(liveCases.map(c => c.id));
+          const unchangedPrev = prev.filter(c => !newIds.has(c.id));
+          return [...liveCases, ...unchangedPrev];
+        });
+      }
+
+      // Merge and update patients state (overwrite matched keys, keep mock/previous patients)
+      if (newPatients.length > 0) {
+        setPatients(prev => {
+          const newIds = new Set(newPatients.map(p => p.id));
+          const unchangedPrev = prev.filter(p => !newIds.has(p.id));
+          return [...newPatients, ...unchangedPrev];
         });
       }
     };
@@ -1427,6 +1598,7 @@ export default function HospitalDashboard() {
             <tr>
               <th className="px-6 py-3">Patient Name</th>
               <th className="px-6 py-3">Date</th>
+              <th className="px-6 py-3">Priority</th>
               <th className="px-6 py-3">Status</th>
               <th className="px-6 py-3">Source</th>
               <th className="px-6 py-3">Notes</th>
@@ -1435,13 +1607,16 @@ export default function HospitalDashboard() {
           <tbody>
             {aiAppointments.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-ink/50">No AI appointments found.</td>
+                <td colSpan={6} className="px-6 py-8 text-center text-ink/50">No AI appointments found.</td>
               </tr>
             ) : (
               aiAppointments.map((apt: any) => (
                 <tr key={apt.id} className="border-b border-ink/5 hover:bg-teal-50/50">
                   <td className="px-6 py-4 font-bold text-ink">{apt.patient_name}</td>
                   <td className="px-6 py-4 font-mono text-xs">{apt.date}</td>
+                  <td className="px-6 py-4">
+                    <TierBadge tier={apt.tier} size="sm" />
+                  </td>
                   <td className="px-6 py-4">
                     <span className={`rounded-full px-2 py-1 text-xs font-bold uppercase ${apt.status === 'scheduled' ? 'bg-teal-100 text-teal-700' : 'bg-amber-100 text-amber-700'}`}>
                       {apt.status}

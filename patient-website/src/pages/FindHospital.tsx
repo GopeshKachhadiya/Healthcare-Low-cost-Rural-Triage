@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Navigation, MapPin, AlertCircle, Loader2 } from "lucide-react";
+import { Navigation, MapPin, AlertCircle, Loader2, ArrowLeft } from "lucide-react";
 import PulseDivider from "../components/PulseDivider";
 
 // Fix for default leaflet markers not showing correctly in React
+// @ts-ignore
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+// @ts-ignore
 import markerIcon from "leaflet/dist/images/marker-icon.png";
+// @ts-ignore
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 // @ts-ignore
@@ -133,13 +137,24 @@ export default function FindHospital() {
 
   return (
     <div className="pb-20">
-      <section className="mx-auto max-w-3xl px-5 pt-14 pb-8 text-center">
-        <h1 className="font-display text-4xl font-semibold leading-tight text-teal-700 sm:text-5xl">
-          Find a Hospital
-        </h1>
-        <p className="mx-auto mt-4 max-w-xl text-base text-ink/70">
-          Discover the nearest healthcare facilities based on your current location.
-        </p>
+      <section className="mx-auto max-w-3xl px-5 pt-14 pb-8 relative">
+        <div className="absolute left-5 top-14">
+          <Link
+            to="/home"
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-ink/10 bg-white text-ink hover:border-teal-400 hover:text-teal-600 transition-all shadow-sm shrink-0"
+            aria-label="Back to Home"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+        </div>
+        <div className="text-center">
+          <h1 className="font-display text-4xl font-semibold leading-tight text-teal-700 sm:text-5xl">
+            Find a Hospital
+          </h1>
+          <p className="mx-auto mt-4 max-w-xl text-base text-ink/70">
+            Discover the nearest healthcare facilities based on your current location.
+          </p>
+        </div>
       </section>
 
       <PulseDivider className="opacity-40 mb-8" />

@@ -193,7 +193,14 @@ export default function AppointmentDetail() {
             <h4 className="font-semibold text-ink text-sm">Appointment Timing</h4>
             <div className="text-xs leading-normal space-y-2 text-ink/70">
               <p>
-                <strong>Date:</strong> {new Date(apt.date).toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                <strong>Date:</strong> {(() => {
+                  try {
+                    const d = new Date(apt.date);
+                    return isNaN(d.getTime()) ? apt.date : d.toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+                  } catch {
+                    return apt.date;
+                  }
+                })()}
               </p>
               <p>
                 <strong>Time Slot:</strong> {apt.time}

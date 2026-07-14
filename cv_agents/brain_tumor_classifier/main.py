@@ -59,16 +59,32 @@ async def predict(file: UploadFile = File(...)):
             
         # Run YOLO inference
         results = model.predict(image)
-        
-        # Parse YOLOv8 classification results
         result = results[0]
-        probs = result.probs.data.tolist()
-        names = result.names
         
-        predictions = {names[i]: round(probs[i], 4) for i in range(len(probs))}
-        top_idx = result.probs.top1
-        top_class = names[top_idx]
-        confidence = round(result.probs.top1conf.item(), 4)
+        predictions = {
+            "Glioma": 0.0,
+            "Meningioma": 0.0,
+            "Pituitary": 0.0,
+            "No Tumor": 1.0
+        }
+        top_class = "No Tumor"
+        confidence = 1.0
+        
+        if hasattr(result, 'boxes') and result.boxes is not None and len(result.boxes) > 0:
+            # We have detections!
+            predictions["No Tumor"] = 0.0
+            for box in result.boxes:
+                cls_id = int(box.cls[0].item())
+                conf_val = float(box.conf[0].item())
+                class_name = result.names[cls_id]
+                
+                if class_name in predictions:
+                    predictions[class_name] = max(predictions[class_name], round(conf_val, 4))
+                else:
+                    predictions[class_name] = round(conf_val, 4)
+            
+            top_class = max(predictions, key=predictions.get)
+            confidence = predictions[top_class]
         
         response = {
             "predictions": predictions,
