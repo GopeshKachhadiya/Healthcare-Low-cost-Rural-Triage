@@ -34,16 +34,6 @@ const PRESET_CASES: {
     explanation: "This lesion displays asymmetry, irregular borders, and color variations. These visual biomarkers are strong signs of melanocytic instability.",
     recommendation: "Immediate referral raised. Do not scratch or biopsy locally. An appointment with Dr. Neha Patel has been auto-escalated at the District Referral Hospital.",
   },
-  {
-    modality: "eye",
-    condition: "Acute Conjunctivitis",
-    confidence: 0.86,
-    tier: "yellow",
-    image: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'><rect width='100%' height='100%' fill='%23fcebe1'/><path d='M100 150 Q200 80 300 150 Q200 220 100 150 Z' fill='%23fcf0eb' stroke='%23d94141' stroke-width='4'/><circle cx='200' cy='150' r='50' fill='%23fca851' stroke='%232b71ab' stroke-width='8'/><circle cx='200' cy='150' r='20' fill='%23000'/><path d='M120 150 Q160 140 170 145 M230 155 Q270 160 280 152' stroke='%23b82727' stroke-width='2' fill='none'/></svg>",
-    heatmap: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'><rect width='100%' height='100%' fill='%23000' opacity='0.25'/><circle cx='150' cy='150' r='60' fill='url(%23ge)'/><circle cx='250' cy='150' r='60' fill='url(%23ge)'/><defs><radialGradient id='ge'><stop offset='0%' stop-color='%23ffaa00' stop-opacity='0.9'/><stop offset='70%' stop-color='%23ffff00' stop-opacity='0.5'/><stop offset='100%' stop-color='%2300ff00' stop-opacity='0'/></defs></svg>",
-    explanation: "Severe redness in the conjunctival sclera, indicative of viral or bacterial swelling. Highly infectious. Requires clinical review to differentiate and prescribe antibiotic eye drops.",
-    recommendation: "Avoid touching or rubbing the eyes. Wash hands frequently. Do not share towels. Visit the clinic within 24-48 hours.",
-  }
 ];
 
 export const STEPS_TEXT = [
@@ -101,7 +91,7 @@ export function useCVScreening() {
 
         // Call Patient Orchestrator Route to log CV result & auto-escalate if Red/Orange
         try {
-          const routeAction = modality === "skin_photo" ? "screen_skin" : modality === "eye" ? "screen_eye" : "screen_oral";
+          const routeAction = "screen_skin";
           const response = await fetch("http://127.0.0.1:9000/route", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

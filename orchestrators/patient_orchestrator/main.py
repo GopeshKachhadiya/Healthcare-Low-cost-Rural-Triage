@@ -51,7 +51,7 @@ S2_URL = os.getenv("S2_URL", "http://localhost:8022")
 class PatientRequest(BaseModel):
     patient_id: str
     session_id: Optional[str] = None
-    action: str   # "chat", "screen_skin", "screen_eye", "screen_oral", "book_appointment"
+    action: str   # "chat", "screen_skin", "book_appointment"
     payload: dict
     language: str = "hi"
 
@@ -78,18 +78,18 @@ async def _log_to_supabase(client: httpx.AsyncClient, table: str, data: dict):
 
 
 def extract_triage_tier(care_advice_text: str) -> str:
-   """ Extract the triage color flag based on the AI's urgency level emojis or text."""
-   if not care_advice_text:
-       return "green"
+    """ Extract the triage color flag based on the AI's urgency level emojis or text."""
+    if not care_advice_text:
+        return "green"
 
-   if "🔴" in care_advice_text or "Go to hospital NOW" in care_advice_text:
-    return "red"
-   elif "🟠" in care_advice_text :
-    return "orange"
-   elif "🟡" in care_advice_text or "attention within 24 hours" in care_advice_text:
-    return "yellow"
-   else :
-    return "green"
+    if "🔴" in care_advice_text or "Go to hospital NOW" in care_advice_text:
+        return "red"
+    elif "🟠" in care_advice_text:
+        return "orange"
+    elif "🟡" in care_advice_text or "attention within 24 hours" in care_advice_text:
+        return "yellow"
+    else:
+        return "green"
 
 class ScanRequest(BaseModel):
     image_base64: str
@@ -748,7 +748,7 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
                 }
 
 
-            elif req.action in ("screen_skin", "screen_eye", "screen_oral"):
+            elif req.action == "screen_skin":
                 # Image has been uploaded — response from CV agent is passed in payload
                 cv_result = req.payload.get("cv_result", {})
                 cv_screening_id = cv_result.get("id")

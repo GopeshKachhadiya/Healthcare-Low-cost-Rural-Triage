@@ -4,7 +4,7 @@ export type Tier = "green" | "yellow" | "orange" | "red";
 
 export interface Scan {
   id: string;
-  modality: "skin_photo" | "eye" | "oral";
+  modality: "skin_photo";
   image: string; // Base64 or SVG URL
   heatmap: string; // Gradient overlay Base64 or SVG URL
   condition: string;

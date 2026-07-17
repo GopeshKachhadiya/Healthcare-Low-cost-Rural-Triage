@@ -2,3 +2,8 @@ fastapi
 uvicorn
 httpx
 pydantic
+Pillow
+python-dotenv
+numpy
+opencv-python
+ultralytics
