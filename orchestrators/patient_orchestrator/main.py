@@ -33,8 +33,29 @@ print(f"---------------------")
 
 app = FastAPI(title="Patient Orchestrator API", description="Master Agent P0 — routes all patient-side interactions")
 
+import json
+
 # In-memory local sessions database fallback (used when Supabase is offline/unconfigured)
-local_sessions_db = {}
+LOCAL_SESSIONS_FILE = "local_sessions.json"
+
+def load_local_sessions():
+    if os.path.exists(LOCAL_SESSIONS_FILE):
+        try:
+            with open(LOCAL_SESSIONS_FILE, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading local sessions: {e}")
+            return {}
+    return {}
+
+def save_local_sessions(db):
+    try:
+        with open(LOCAL_SESSIONS_FILE, "w") as f:
+            json.dump(db, f, indent=4)
+    except Exception as e:
+        print(f"Error saving local sessions: {e}")
+
+local_sessions_db = load_local_sessions()
 
 app.add_middleware(
     CORSMiddleware,
@@ -216,6 +237,7 @@ async def route_patient_request(req: PatientRequest):
                         "sbar_report": "Waiting for triage report...",
                         "created_at": datetime.datetime.now().isoformat()
                     }
+                    save_local_sessions(local_sessions_db)
 
                 # Log user message
                 if session_id:
@@ -389,6 +411,7 @@ RULES:
                 if (is_booking_request or has_hospital_choice or has_booking_intent) and not already_booked:
                     if session_id and session_id in local_sessions_db:
                         local_sessions_db[session_id]["appointment_booked"] = True
+                        save_local_sessions(local_sessions_db)
                     for tag in ["[BOOK_APPOINTMENT]", "BOOK_APPOINTMENT"]:
                         rag_answer = rag_answer.replace(tag, "").strip()
                     # Auto escalate to appointment agent with real details
@@ -480,6 +503,7 @@ RULES:
                                 if session_id not in local_sessions_db:
                                     local_sessions_db[session_id] = {"profile": {}, "triage_tier": "Green", "sbar_report": ""}
                                 local_sessions_db[session_id]["profile"] = patient_summary_json
+                                save_local_sessions(local_sessions_db)
                                 
                                 await _log_to_supabase(client, "agent_insights", {
                                     "session_id": session_id,
@@ -710,6 +734,7 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
                                 local_sessions_db[session_id] = {"profile": {}, "triage_tier": "Green", "sbar_report": ""}
                             local_sessions_db[session_id]["triage_tier"] = triage_tier
                             local_sessions_db[session_id]["sbar_report"] = final_sbar_report
+                            save_local_sessions(local_sessions_db)
                         
                         if SUPABASE_URL and SUPABASE_KEY and "your-project" not in SUPABASE_URL:
                             try:
