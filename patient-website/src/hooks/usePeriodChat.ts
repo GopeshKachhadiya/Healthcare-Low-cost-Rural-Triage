@@ -1,4 +1,5 @@
 import { useApp } from "../context/AppContext";
+import { API_BASE_URL } from "../lib/api/config";
 
 export function usePeriodChat() {
   const { chatHistory, addChatMessage, addAppointment, clearChat, user } = useApp();
@@ -19,7 +20,7 @@ export function usePeriodChat() {
     const effectiveLang = hasGujarati ? "gu" : hasHindi ? "hi" : "en";
 
     try {
-      const response = await fetch("http://127.0.0.1:9000/route", {
+      const response = await fetch(`${API_BASE_URL}/route`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

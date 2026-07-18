@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
+import DOMPurify from "dompurify";
+import { API_BASE_URL } from "../lib/api/config";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -62,9 +64,12 @@ function RenderMarkdown({ text }: { text: string }) {
                     <span className="text-rose-400 mt-0.5 shrink-0">•</span>
                     <span
                       dangerouslySetInnerHTML={{
-                        __html: cleaned
-                          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-                          .replace(/\*(.+?)\*/g, "<em>$1</em>"),
+                        __html: DOMPurify.sanitize(
+                          cleaned
+                            .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                            .replace(/\*(.+?)\*/g, "<em>$1</em>"),
+                          { ALLOWED_TAGS: ["strong", "em"], ALLOWED_ATTR: [] }
+                        ),
                       }}
                     />
                   </li>
@@ -73,9 +78,12 @@ function RenderMarkdown({ text }: { text: string }) {
                     key={li}
                     className="text-gray-700"
                     dangerouslySetInnerHTML={{
-                      __html: line
-                        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-                        .replace(/\*(.+?)\*/g, "<em>$1</em>"),
+                      __html: DOMPurify.sanitize(
+                        line
+                          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                          .replace(/\*(.+?)\*/g, "<em>$1</em>"),
+                        { ALLOWED_TAGS: ["strong", "em"], ALLOWED_ATTR: [] }
+                      ),
                     }}
                   />
                 );
@@ -87,10 +95,13 @@ function RenderMarkdown({ text }: { text: string }) {
           <p
             key={bi}
             dangerouslySetInnerHTML={{
-              __html: block
-                .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-                .replace(/\*(.+?)\*/g, "<em>$1</em>")
-                .replace(/\n/g, "<br/>"),
+              __html: DOMPurify.sanitize(
+                block
+                  .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                  .replace(/\*(.+?)\*/g, "<em>$1</em>")
+                  .replace(/\n/g, "<br/>"),
+                { ALLOWED_TAGS: ["strong", "em", "br"], ALLOWED_ATTR: [] }
+              ),
             }}
           />
         );
@@ -148,7 +159,7 @@ export default function PeriodHealthChat() {
   const handleMicClick = async () => {
     if (isRecording) {
       if (timerRef.current) clearTimeout(timerRef.current);
-      const text = await stopRecording("hi", "http://localhost:9000/transcribe");
+      const text = await stopRecording("hi", `${API_BASE_URL}/transcribe`);
       if (text) {
         if (phase === "AWAITING_REPORT") {
           submitReport(text);
@@ -159,7 +170,7 @@ export default function PeriodHealthChat() {
     } else {
       startRecording();
       timerRef.current = setTimeout(async () => {
-        const text = await stopRecording("hi", "http://localhost:9000/transcribe");
+        const text = await stopRecording("hi", `${API_BASE_URL}/transcribe`);
         if (text) {
           if (phase === "AWAITING_REPORT") {
             submitReport(text);
@@ -293,7 +304,7 @@ export default function PeriodHealthChat() {
     setHeatmapOpacity(0.55);
     setShowHeatmap(true);
     try {
-      const res = await fetch("http://localhost:9000/scan-ultrasound", {
+      const res = await fetch(`${API_BASE_URL}/scan-ultrasound`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image_base64: selectedImage }),

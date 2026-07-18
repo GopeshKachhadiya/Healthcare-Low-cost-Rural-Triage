@@ -1,4 +1,5 @@
 import { Appointment } from "../../context/AppContext";
+import { API_BASE_URL } from "./config";
 
 export async function fetchAppointments(userId: string): Promise<Appointment[]> {
   // Return empty list by default (let context manage mock data)
@@ -13,7 +14,7 @@ export async function bookAppointment(
   reason: string
 ): Promise<Appointment> {
   try {
-    const response = await fetch("http://localhost:8000/route", {
+    const response = await fetch(`${API_BASE_URL}/route`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

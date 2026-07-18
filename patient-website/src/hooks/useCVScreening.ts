@@ -3,6 +3,7 @@ import { useApp, Scan, Tier } from "../context/AppContext";
 import { assessImageQuality } from "../agents/P1_imagePreprocessor";
 import { interpretClassification } from "../agents/P3_resultInterpreter";
 import { uploadImageAndScreen } from "../lib/api/cvScreening";
+import { API_BASE_URL } from "../lib/api/config";
 
 const PRESET_CASES: {
   modality: Scan["modality"];
@@ -92,7 +93,7 @@ export function useCVScreening() {
         // Call Patient Orchestrator Route to log CV result & auto-escalate if Red/Orange
         try {
           const routeAction = "screen_skin";
-          const response = await fetch("http://127.0.0.1:9000/route", {
+          const response = await fetch(`${API_BASE_URL}/route`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

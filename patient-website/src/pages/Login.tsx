@@ -47,7 +47,7 @@ export default function Login() {
 
     setTimeout(() => {
       setLoading(false);
-      login(`+91 ${phone}`, "Ramesh Kumar", "patient");
+      login(`+91 ${phone}`, { role: "patient" });
       navigate("/home");
     }, 1000);
   };
@@ -58,7 +58,10 @@ export default function Login() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      login("staff@anvaya.in", role === "doctor" ? "Dr. Priya Sharma" : role === "nurse" ? "ANM Kamla Devi" : "District Admin", role);
+      login("staff@anvaya.in", {
+        name: role === "doctor" ? "Dr. Priya Sharma" : role === "nurse" ? "ANM Kamla Devi" : "District Admin",
+        role,
+      });
       navigate("/hospital");
     }, 1000);
   };
@@ -69,10 +72,13 @@ export default function Login() {
     setTimeout(() => {
       setLoading(false);
       if (demoRole === "patient") {
-        login("+91 9876543210", "Ramesh Kumar", "patient");
+        login("+91 9876543210", { name: "Ramesh Kumar", role: "patient", dob: "1988-06-15", gender: "Male", village: "Chandpur", abhaId: "14-8890-4321-7756", preferredLanguage: "en" });
         navigate("/home");
       } else {
-        login("staff@anvaya.in", demoRole === "doctor" ? "Dr. Priya Sharma" : demoRole === "nurse" ? "ANM Kamla Devi" : "District Admin", demoRole);
+        login("staff@anvaya.in", {
+          name: demoRole === "doctor" ? "Dr. Priya Sharma" : demoRole === "nurse" ? "ANM Kamla Devi" : "District Admin",
+          role: demoRole,
+        });
         navigate("/hospital");
       }
     }, 800);

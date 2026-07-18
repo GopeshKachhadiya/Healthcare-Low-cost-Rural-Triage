@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
+import DOMPurify from "dompurify";
+import { API_BASE_URL } from "../lib/api/config";
 import { Link, useSearchParams } from "react-router-dom";
 import { MessageCircle, Send, Volume2, ShieldAlert, Sparkles, Trash2, ArrowLeft } from "lucide-react";
 import PulseDivider from "../components/PulseDivider";
@@ -8,6 +10,15 @@ import { useChat } from "../hooks/useChat";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import { useTranslation } from "../hooks/useTranslation";
 import { useApp } from "../context/AppContext";
+
+/** Converts basic markdown tokens to HTML and sanitizes the result. */
+const sanitizeMd = (raw: string) =>
+  DOMPurify.sanitize(
+    raw
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>"),
+    { ALLOWED_TAGS: ["strong", "em", "br"], ALLOWED_ATTR: [] }
+  );
 
 const STANDARD_QUESTIONS = [
   { text: "What is diabetes? / मधुमेह क्या है?", intent: "disease" },
@@ -53,12 +64,12 @@ export default function Chat() {
     const userLang = user?.preferredLanguage || "hi";
     if (isRecording) {
       if (timerRef.current) clearTimeout(timerRef.current);
-      const text = await stopRecording(userLang, "http://127.0.0.1:9000/transcribe");
+      const text = await stopRecording(userLang, `${API_BASE_URL}/transcribe`);
       if (text) sendMessage(text, condition || undefined);
     } else {
       startRecording();
       timerRef.current = setTimeout(async () => {
-        const text = await stopRecording(userLang, "http://127.0.0.1:9000/transcribe");
+        const text = await stopRecording(userLang, `${API_BASE_URL}/transcribe`);
         if (text) sendMessage(text, condition || undefined);
       }, 7000);
     }
@@ -229,17 +240,23 @@ export default function Chat() {
                                 return isItem ? (
                                   <li key={li} className="flex items-start gap-1.5">
                                     <span className="text-teal-500 mt-0.5 shrink-0">•</span>
-                                    <span dangerouslySetInnerHTML={{ __html: cleaned.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>") }} />
+                                    <span dangerouslySetInnerHTML={{ __html: sanitizeMd(cleaned) }} />
                                   </li>
                                 ) : (
-                                  <p key={li} className="text-ink/80" dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>") }} />
+                                  <p key={li} className="text-ink/80" dangerouslySetInnerHTML={{ __html: sanitizeMd(line) }} />
                                 );
                               })}
                             </ul>
                           );
                         }
                         return (
-                          <p key={bi} dangerouslySetInnerHTML={{ __html: block.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>").replace(/\n/g, "<br/>") }} />
+                          <p key={bi} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(
+                            block
+                              .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                              .replace(/\*(.+?)\*/g, "<em>$1</em>")
+                              .replace(/\n/g, "<br/>"),
+                            { ALLOWED_TAGS: ["strong", "em", "br"], ALLOWED_ATTR: [] }
+                          ) }} />
                         );
                       })}
                     </div>

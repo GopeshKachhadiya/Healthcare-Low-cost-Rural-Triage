@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useApp } from "../context/AppContext";
+import { API_BASE_URL } from "../lib/api/config";
 
 export type ChatPhase = "NORMAL" | "AWAITING_REPORT" | "DONE";
 
@@ -50,7 +51,7 @@ export function usePeriodHealthChat() {
     const hasHindi    = /[\u0900-\u097F]/.test(text);
     const effectiveLang = hasGujarati ? "gu" : hasHindi ? "hi" : "en";
 
-    const res = await fetch("http://localhost:9000/route", {
+    const res = await fetch(`${API_BASE_URL}/route`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

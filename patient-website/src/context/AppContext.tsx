@@ -64,7 +64,7 @@ interface AppContextProps {
   scans: Scan[];
   appointments: Appointment[];
   chatHistory: ChatMessage[];
-  login: (phone: string, name?: string, role?: UserProfile["role"]) => void;
+  login: (phone: string, profile?: Pick<UserProfile, "name" | "dob" | "gender" | "village" | "abhaId" | "preferredLanguage"> & { role?: UserProfile["role"] }) => void;
   logout: () => void;
   updateProfile: (profile: Partial<UserProfile>) => void;
   updateConsent: (consent: Partial<ConsentState>) => void;
@@ -80,16 +80,7 @@ const AppContext = createContext<AppContextProps | undefined>(undefined);
 export function AppContextProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem("am_user");
-    return saved ? JSON.parse(saved) : {
-      name: "Ramesh Kumar",
-      role: "patient",
-      phone: "+91 98765 43210",
-      dob: "1988-06-15",
-      gender: "Male",
-      village: "Chandpur",
-      abhaId: "14-8890-4321-7756",
-      preferredLanguage: "en",
-    };
+    return saved ? JSON.parse(saved) : null;
   });
 
   const [consent, setConsent] = useState<ConsentState>(() => {
@@ -175,23 +166,27 @@ export function AppContextProvider({ children }: { children: React.ReactNode }) 
     localStorage.setItem("am_chat", JSON.stringify(chatHistory));
   }, [chatHistory]);
 
-  const login = (phone: string, name?: string, role: UserProfile["role"] = "patient") => {
+  const login = (
+    phone: string,
+    profile?: Partial<Pick<UserProfile, "name" | "dob" | "gender" | "village" | "abhaId" | "preferredLanguage">> & { role?: UserProfile["role"] }
+  ) => {
     setUser({
-      name: name || "Ramesh Kumar",
-      role: role,
-      phone: phone,
-      dob: "1988-06-15",
-      gender: "Male",
-      village: "Chandpur",
-      abhaId: "14-8890-4321-7756",
-      preferredLanguage: "en",
+      name: profile?.name || "",
+      role: profile?.role || "patient",
+      phone,
+      dob: profile?.dob || "",
+      gender: profile?.gender || "",
+      village: profile?.village || "",
+      abhaId: profile?.abhaId || "",
+      preferredLanguage: profile?.preferredLanguage || "en",
     });
   };
 
   const logout = () => {
     localStorage.removeItem("am_user");
     setUser(null);
-    window.location.href = "/";
+    // Navigation is handled by the caller (useSession) via React Router's
+    // useNavigate — window.location.href is avoided to preserve SPA behaviour.
   };
 
   const updateProfile = (profile: Partial<UserProfile>) => {

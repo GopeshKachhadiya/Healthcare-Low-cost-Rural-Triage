@@ -1,4 +1,5 @@
 import { useApp } from "../context/AppContext";
+import { API_BASE_URL } from "../lib/api/config";
 import { useRef } from "react";
 
 export function useChat() {
@@ -25,7 +26,7 @@ export function useChat() {
     const effectiveLang = hasGujarati ? "gu" : hasHindi ? "hi" : "en";
 
     try {
-      const response = await fetch("http://127.0.0.1:9000/route", {
+      const response = await fetch(`${API_BASE_URL}/route`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -43,7 +44,7 @@ export function useChat() {
               village: user.village,
               abha_id: user.abhaId,
               gender: user.gender === "Male" ? "M" : "F",
-              age: 20
+              age: user.dob ? Math.floor((Date.now() - new Date(user.dob).getTime()) / 31557600000) : 0
             } : null,
             history: chatHistory.map(m => ({
               role: m.sender === "bot" ? "assistant" : "user",

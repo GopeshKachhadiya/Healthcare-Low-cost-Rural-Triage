@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { A1_URL, API_BASE_URL, HOSPITAL_AI_URL } from "../../lib/api/config";
 import { useSearchParams } from "react-router-dom";
 import { 
   ChevronRight, Activity, X, User, Calendar, MapPin, Search, 
@@ -74,7 +75,7 @@ export default function HospitalDashboard() {
     const fetchAiAppointments = async () => {
       try {
         // Fetch from the FastAPI Appointment Manager Agent (Port 8011)
-        const response = await fetch("http://localhost:8011/appointments?source_type=appointment");
+        const response = await fetch(`${A1_URL}/appointments?source_type=appointment`);
         
         if (response.ok) {
           const data = await response.json();
@@ -127,7 +128,7 @@ export default function HospitalDashboard() {
 
       // 1. Try to fetch from local Patient Orchestrator sessions endpoint
       try {
-        const resp = await fetch("http://localhost:9000/sessions");
+        const resp = await fetch(`${API_BASE_URL}/sessions`);
         if (resp.ok) {
           const localSessions = await resp.json();
           sessionsData = localSessions;
@@ -175,7 +176,7 @@ export default function HospitalDashboard() {
       // 2. Fetch live appointments from the Appointment Manager (Port 8011)
       let appointmentsData: any[] = [];
       try {
-        const aptResp = await fetch("http://localhost:8011/appointments?source_type=appointment");
+        const aptResp = await fetch(`${A1_URL}/appointments?source_type=appointment`);
         if (aptResp.ok) {
           appointmentsData = await aptResp.json();
         }
@@ -560,9 +561,9 @@ export default function HospitalDashboard() {
 
     let url = "";
     if (modality === "mri" || modality === "ct") {
-      url = "http://localhost:8003/predict";
+      url = `${HOSPITAL_AI_URL}/predict`;
     } else {
-      url = "http://localhost:8004/predict";
+      url = `${HOSPITAL_AI_URL.replace(/:8003$/, ":8004")}/predict`;
     }
 
     // Preprocessing step

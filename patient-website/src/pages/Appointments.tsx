@@ -28,7 +28,7 @@ export default function Appointments() {
       case "accepted":
         return "bg-teal-50 text-teal-700 border-teal-200/50";
       case "in_consultation":
-        return "bg-teal-505 text-white border-teal-505 animate-pulse";
+        return "bg-teal-600 text-white border-teal-600 animate-pulse";
       case "completed":
         return "bg-tier-green-bg text-tier-green border-tier-green/20";
       case "cancelled":

@@ -815,7 +815,18 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
                     "reason": req.payload.get("reason", "General consultation"),
                     "urgency_tier": req.payload.get("urgency_tier", "Green")
                 })
-                return {"status": "success", "route": "appointment", "data": appt_resp.json()}
+                if appt_resp.status_code not in (200, 201):
+                    print(f"[ERROR] Appointment Manager returned {appt_resp.status_code}: {appt_resp.text[:300]}")
+                    raise HTTPException(
+                        status_code=appt_resp.status_code,
+                        detail=f"Appointment service error: {appt_resp.text[:200]}"
+                    )
+                try:
+                    appt_data = appt_resp.json()
+                except Exception as json_err:
+                    print(f"[ERROR] Failed to parse appointment response JSON: {json_err}")
+                    raise HTTPException(status_code=502, detail="Appointment service returned an invalid response.")
+                return {"status": "success", "route": "appointment", "data": appt_data}
 
             else:
                 raise HTTPException(status_code=400, detail=f"Unknown action: {req.action}")

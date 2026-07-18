@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { HOSPITAL_AI_URL } from "../../lib/api/config";
 import { Link } from "react-router-dom";
 import { ArrowLeft, UploadCloud, RefreshCw, Eye, Activity, ShieldAlert, Image as ImageIcon } from "lucide-react";
 import PulseDivider from "../../components/PulseDivider";
@@ -24,10 +25,11 @@ export default function HospitalImaging() {
     formData.append("file", file);
 
     const port = modality === "mri" ? 8002 : 8004;
-    const url = `http://localhost:${port}/predict`;
+    const url = HOSPITAL_AI_URL.replace(/:80\d+$/, `:${port}`) || `http://localhost:${port}`;
+    const predict = `${url}/predict`;
 
     try {
-      const res = await fetch(url, {
+      const res = await fetch(predict, {
         method: "POST",
         body: formData,
       });
