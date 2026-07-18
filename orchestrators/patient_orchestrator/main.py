@@ -729,7 +729,7 @@ Now provide specific, grounded care advice for THIS patient based ONLY on what t
                             except Exception as e:
                                 print(f"  -> Failed to update session tier and report: {e}")
                 
-                # Generate TTS base64 audio stream
+                # Generate TTS base64 audio stream.
                 audio_b64 = await text_to_speech(translated_answer, user_lang)
 
                 return {
